@@ -68,6 +68,37 @@ def save_user_visit(user_id, articleNo):
 
 
 
+# @app.route('/api/user/visit_recipe', methods=['POST'])
+# def add_user_visit():
+#     data = request.form
+#     user_id = data.get("user_id")
+#     articleNo = data.get("articleNo")
+#
+#     print("Received user_id:", user_id)
+#     print("Received articleNo:", articleNo)
+#
+#     save_user_visit(user_id, articleNo)
+#
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+#
+#     # 이미 방문한 기록이 있는지 확인
+#     SQL_check = 'SELECT COUNT(*) FROM user_visits WHERE user_id = %s AND articleNo = %s'
+#     cursor.execute(SQL_check, (user_id, articleNo))
+#     count = cursor.fetchone()[0]
+#
+#     if count == 0:
+#         # 방문한 기록이 없으면 새로운 레코드 삽입
+#         SQL_insert = 'INSERT INTO user_visits (user_id, articleNo) VALUES (%s, %s)'
+#         cursor.execute(SQL_insert, (user_id, articleNo))
+#         conn.commit()
+#
+#     cursor.close()
+#     conn.close()
+#
+#     return jsonify({"success": True}), 200
+
+
 def translateCategory(catId):
     cuisineType = '기타'
 
