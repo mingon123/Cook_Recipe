@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS recipes_data1 (
     이미지5 TEXT, 
     조리순서6 TEXT,
     이미지6 TEXT
-)
+);
 """
 
 cursor.execute(create_table_query)

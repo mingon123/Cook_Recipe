@@ -15,3 +15,6 @@ app.register_blueprint(article)
 
 from appmain.reply.routes import reply
 app.register_blueprint(reply)
+
+from appmain.recommend.routes import recommend
+app.register_blueprint(recommend)

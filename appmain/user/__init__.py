@@ -27,18 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
 '''
 cursor.execute(SQL)
 
-SQL_user_visits = '''
-CREATE TABLE IF NOT EXISTS user_visits (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NULL,
-    articleNo INT NOT NULL,
-    visit_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (user_id),
-    FOREIGN KEY (articleNo) REFERENCES recipes_data1 (번호)
-);
-'''
-cursor.execute(SQL_user_visits)
-
 db.commit()
+
 cursor.close()
 db.close()

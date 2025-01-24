@@ -33,6 +33,9 @@
                     <li class="nav-item">
                         <a class="nav-link" id="myinfo_link" href="/myinfo">마이페이지</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend_link" href="/recommend">추천 레시피</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -128,59 +131,6 @@
     const nutCheckbox = document.getElementById('nut');
 
     function displayRecentArticles(articles) {
-        const container = document.getElementById('recent_articles');
-        container.innerHTML = '';
-
-        articles.forEach((article) => {
-            let recipeName = article["recipeName"];  // 메뉴명
-            let ingredients = article["ingredients"];  // 재료
-            let cookingMethod = article["cookingMethod"];  // 조리 방법
-            let cuisineType = article["cuisineType"];  // 요리 종류
-            let calories = article["calories"];  // 열량
-            let carbohydrates = article["carbohydrates"];  // 탄수화물
-            let protein = article["protein"];  // 단백질
-            let fat = article["fat"];  // 지방
-            let sodium = article["sodium"];  // 나트륨
-
-            let cardDiv = document.createElement('div');
-            cardDiv.className = 'card mt-2';
-
-            let articleElement = `
-                <h5 class="card-header" style="background-color: #c0c0c0;"><span style="color: #0071ff;">${recipeName}</span></h5>
-                <div class="card-body">
-                    <p class="card-text">재료: ${article.ingredients}</p><br>
-                    <p class="card-text">조리 방법: ${article.cookingMethod} &nbsp;&nbsp; 요리 종류: ${article.cuisineType}</p>
-                    <p class="card-text"><strong>영양(1회 제공량당)</strong><br> 열량: ${article.calories}kcal, 탄수화물: ${article.carbohydrates}g, 단백질: ${article.protein}g, 지방: ${article.fat}g, 나트륨: ${article.sodium}mg</p>
-                </div>
-            `;
-
-            cardDiv.innerHTML = articleElement;
-            recentArticlesDiv.appendChild(cardDiv);
-        });
-    }
-
-    window.addEventListener('load', getRecentArticles);
-
-
-    document.addEventListener('DOMContentLoaded', function () {
-        fetchRecentArticles();
-    });
-    function getRecentArticles() {
-        fetch('/api/article/recent', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then((response) => {
-            return response.json();
-        }).then((resBody) => {
-            displayRecentArticles(resBody["articles"]);
-        }).catch((error) => {
-            console.log('[Error]getRecentArticles():', error);
-        });
-    }
-
-    function displayRecentArticles(articles) {
         const container = document.getElementById('recent_articles_div');
         container.innerHTML = ''; // Clear existing content
 
@@ -205,6 +155,43 @@
             container.appendChild(cardDiv);
         });
     }
+
+    window.addEventListener('load', getRecentArticles);
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchRecentArticles();
+    });
+    function getRecentArticles() {
+        fetch('/api/article/recent', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then((response) => {
+            return response.json();
+        }).then((resBody) => {
+            displayRecentArticles(resBody["articles"]);
+        }).catch((error) => {
+            console.log('[Error]getRecentArticles():', error);
+        });
+    }
+
+    function fetchRecentArticles() {
+        fetch('/api/article/recent', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then((response) => {
+            return response.json();
+        }).then((resBody) => {
+            displayRecentArticles(resBody["articles"]);
+        }).catch((error) => {
+            console.log('[Error]fetchRecentArticles():', error);
+        });
+    }
+
 
     function displaySearchResults(articles) {
         articles.forEach((article) => {

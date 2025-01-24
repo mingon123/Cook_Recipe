@@ -2,7 +2,8 @@ const signup = document.querySelector("#signup_link");
 const signin = document.querySelector("#signin_link");
 const signout = document.querySelector("#signout_link");
 const myinfo = document.querySelector("#myinfo_link");
-const createArticleLink = document.querySelector("#create_article_link");
+const recommendLink = document.querySelector("#recommend_link");
+//const createArticleLink = document.querySelector("#create_article_link");
 
 function showAndHideNavbarMenu() {
     let authtoken = window.sessionStorage.getItem("authtoken");
@@ -10,11 +11,13 @@ function showAndHideNavbarMenu() {
     if(authtoken){
         signup.style.display = "none";
         signin.style.display = "none";
+        recommendLink.style.display = "block";
     }
     else{
         signout.style.display = "none";
         myinfo.style.display = "none";
-        createArticleLink.style.display = "none";
+        recommendLink.style.display = "none";
+//        createArticleLink.style.display = "none";
     }
 }
 
