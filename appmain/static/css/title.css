@@ -1,0 +1,9 @@
+h4 {
+    font-size: 30px;
+}
+
+.custom-border {
+    border: 1.5px solid #bdbebd;
+    border-radius: 8px;
+    padding: 5px;
+}
