@@ -18,3 +18,6 @@ app.register_blueprint(reply)
 
 from appmain.recommend.routes import recommend
 app.register_blueprint(recommend)
+
+from appmain.recommend1.routes import recommend1
+app.register_blueprint(recommend1)

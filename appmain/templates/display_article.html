@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/title.css">
+    <link rel="stylesheet" href="/static/css/sidebar.css">
+    <link rel="stylesheet" href="/static/css/similar_sidebar.css">
     <title>Display Article</title>
     <style>
-        h4 {font-size: 30px;}
         #article_title_div {font-size: 30px; white-space: nowrap;}
         .article-content {margin-top: 20px;}
         .article-content p {margin-bottom: 10px;}
@@ -37,14 +39,16 @@
                     <li class="nav-item">
                         <a class="nav-link" id="recommend_link" href="/recommend">추천 레시피</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend1_link" href="/recommend1">추천 레시피1</a>
+                    </li>
                 </ul>
             </div>
         </div>
     </div>
 
     <div class="container mt-5">
-        <div class="row justify-content-center col-8" id="article_title_div">
-        </div>
+        <div class="row justify-content-center col-8" id="article_title_div"></div>
         <div class="row justify-content-center">
             <div class="col-9">
                 <hr>
@@ -59,13 +63,23 @@
                 </figure>
             </div>
         </div>
-        <div class="row article-content justify-content-center" id="article_desc_div">
-        </div>
-        <div class="row article-content justify-content-center" id="nutrition_info_div">
-        </div>
-        <div class="row article-content justify-content-center" id="tips_div">
-        </div>
-        <div class="row article-content justify-content-center" id="cooking_sequence_div">
+        <div class="row article-content justify-content-center" id="article_desc_div"></div>
+        <div class="row article-content justify-content-center" id="nutrition_info_div"></div>
+        <div class="row article-content justify-content-center" id="tips_div"></div>
+        <div class="row article-content justify-content-center" id="cooking_sequence_div"></div>
+        <div class="row">
+            <div class="similar-recipes-container">
+                <div class="similar-recipes">
+                    <h5>유사한 레시피</h5>
+                    <div id="similar_viewed"></div>
+                </div>
+            </div>
+            <div class="col-lg-4 sidebar-container">
+                <div class="sidebar sticky-sidebar">
+                    <h5>최근 조회 레시피</h5>
+                    <div id="recent_viewed"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -106,332 +120,9 @@
     </div>
 </body>
 <script type="text/javascript" src="/static/js/navbar.js"></script>
-<!--<script type="text/javascript" src="/static/js/display_article.js"></script>-->
-<script>
-
-    sessionStorage.setItem("user_id", "{{ user_id }}");
-
-    function getArticleNo() {
-        const location = window.location.href;
-        const url = new URL(location);
-        const articleNo = url.pathname.split('/')[2];
-
-        return articleNo;
-    }
-
-    function getUserId() {
-        return sessionStorage.getItem("user_id");
-    }
-
-    function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, calories, carbohydrates, protein, fat, sodium, att_file_no_mk, rcp_na_tip,
-                            manual1, manual_img1, manual2, manual_img2, manual3, manual_img3, manual4, manual_img4, manual5, manual_img5, manual6, manual_img6) {
-        const titleSection = document.querySelector('#article_title_div');
-        const descSection = document.querySelector('#article_desc_div');
-        const imageFigure = document.querySelector('#article_image_fig');
-        const nutritionSection = document.querySelector('#nutrition_info_div');
-        const cookingSequenceSection = document.querySelector('#cooking_sequence_div');
-        const tipsSection = document.querySelector('#tips_div');
-        const replyInput = document.querySelector('#reply_input');
-        const leaveReplyDiv = document.querySelector('#leave_reply_div');
-        const leaveReplyButton = document.querySelector('#leave_reply_button');
-        const displayReplyDiv = document.querySelector('#display_reply_div');
-        const moreRepliesButton = document.querySelector('#more_replies_button');
-
-
-        let baseIndex = 0;
-        const numReplyRead = 3;
-
-        function displayReply() {
-            const authToken = sessionStorage.getItem("authtoken");
-            if(!authToken){
-                leaveReplyDiv.hidden = true;
-            }
-            const articleNo = getArticleNo();
-
-            let formData = new FormData();
-
-            formData.set("articleNo", articleNo);
-            formData.set("baseIndex", baseIndex);
-            formData.set("numReplyRead", numReplyRead);
-
-            fetch('/api/reply/get', {
-                method: 'POST',
-                body: formData
-            }).then((response) => {
-                return response.json();
-            }).then((resBody) => {
-                const replies = resBody["replies"];
-
-                replies.forEach((reply) => {
-                    let replyRow = document.createElement('div');
-                    replyRow.className = 'row justify-content-center mt-2';
-                    replyRow.id = `reply_row-${reply["replyNo"]}`
-
-                    replyContent = `
-                        <div class="col-1">
-                        </div>
-                        <div class="col-6">
-                            <div class="row">
-                                <div class="col-2">
-                                    ${reply["author"]}
-                                </div>
-                                <div class="col-7">
-                                    ${reply["desc"]}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-2" class="delete_reply_button_div">
-                            <button type="button" class="btn btn-secondary btn-sm" data-replyno="${reply["replyNo"]}">삭제</button>
-                        </div>`;
-
-                    replyRow.innerHTML = replyContent;
-
-                    let deleteButton = replyRow.querySelector('button');
-
-                    if(!authToken){
-                        deleteButton.hidden = true;
-                    }
-                    else{
-                        username = sessionStorage.getItem("username");
-                        author = reply["author"]
-
-                        if(username != author){
-                            deleteButton.hidden = true;
-                        }
-                        else{
-                            deleteButton.addEventListener('click', onDeleteReplyHandler);
-                        }
-                    }
-
-                    displayReplyDiv.appendChild(replyRow);
-                });
-
-                if(resBody["moreReplies"] === false){
-                    moreRepliesButton.hidden = true;
-                }
-
-                baseIndex = baseIndex + numReplyRead;
-            }).catch((error) => {
-                console.log("[Error]getReply():", error);
-            });
-        }
-
-        window.addEventListener('load', displayReply);
-        moreRepliesButton.addEventListener('click', displayReply);
-
-        function checkReplyInput() {
-            return replyInput.value.length > 0;
-        }
-
-    function onLeaveReplyHandler() {
-        const articleNo = getArticleNo();
-        let isReplyInputValid = checkReplyInput();
-
-        if(isReplyInputValid === true){
-            let headerData = new Headers();
-            let authToken = sessionStorage.getItem("authtoken");
-            if(authToken){
-                headerData.set("authtoken", authToken);
-            }
-
-            let formData = new FormData();
-
-            formData.set("articleNo", articleNo);
-            formData.set("reply", replyInput.value);
-
-            fetch('/api/reply/leave', {
-                method: 'POST',
-                headers: headerData,
-                body: formData
-            }).then((response) => {
-                return response.json();
-            }).then((resBody) => {
-                let replyRow = document.createElement('div');
-                replyRow.className = 'row justify-content-center mt-2';
-                replyRow.id = `reply_row-${resBody["replyNo"]}`
-
-                replyContent = `
-                    <div class="col-1">
-                    </div>
-                    <div class="col-6">
-                        <div class="row">
-                            <div class="col-2">
-                                ${resBody["author"]}
-                            </div>
-                            <div class="col-7">
-                                ${resBody["desc"]}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-2" class="delete_reply_button_div">
-                        <button type="button" class="btn btn-secondary btn-sm" data-replyno="${resBody["replyNo"]}">삭제</button>
-                    </div>`;
-
-                replyRow.innerHTML = replyContent;
-
-                let deleteButton = replyRow.querySelector('button');
-                deleteButton.addEventListener('click', onDeleteReplyHandler);
-
-                displayReplyDiv.insertBefore(replyRow, displayReplyDiv.firstChild);
-
-                replyInput.value = '';
-                baseIndex = baseIndex + 1;
-            }).catch((error) => {
-                console.log('[Error]create_article.onSubmitHandler:', error);
-            });
-        }
-    }
-
-    leaveReplyButton.addEventListener('click', onLeaveReplyHandler);
-
-    function onDeleteReplyHandler(event) {
-        const replyNo = event.currentTarget.dataset.replyno;
-
-        let headerData = new Headers();
-        const authToken = sessionStorage.getItem("authtoken");
-        if(authToken){
-            headerData.set("authtoken", authToken);
-        }
-
-        let formData = new FormData();
-
-        formData.set("replyNo", replyNo);
-
-        fetch('/api/reply/delete', {
-            method: 'POST',
-            headers: headerData,
-            body: formData
-        }).then((response) => {
-            return response.json();
-        }).then((resBody) => {
-            if(resBody["success"] === true){
-                console.log('onDeleteReplyHandler():', replyNo);
-
-                const targetReplyRowId = `#reply_row-${replyNo}`;
-                const targetReplyRow = document.querySelector(targetReplyRowId);
-                targetReplyRow.remove();
-                baseIndex = baseIndex - 1;
-            }
-        }).catch((error) => {
-            console.log('[Error]onDeleteReplyHandler():', error);
-        });
-    }
-
-
-        let titleDiv = document.createElement('div');
-        titleDiv.className = 'col-7';
-        titleDiv.id = 'article_title';
-        let title = `[${cuisineType}] ${recipeName}`;
-        titleDiv.appendChild(document.createTextNode(title));
-        titleSection.appendChild(titleDiv);
-
-        if (att_file_no_mk && att_file_no_mk.length > 0) {
-            let image = document.createElement('img');
-            image.src = att_file_no_mk;
-            image.className = 'figure-img img-fluid rounded';
-            imageFigure.appendChild(image);
-        }
-
-        let descDiv = document.createElement('div');
-        descDiv.className = 'col-9';
-        descDiv.id = 'article_desc';
-        descDiv.innerHTML = `
-            <p><strong style="font-size: 20px;">재료</strong><br> ${ingredients}</p>
-            <br>
-            <p><strong style="font-size: 18px;">조리 방법:</strong> ${cookingMethod}</p>
-        `;
-        descSection.appendChild(descDiv);
-
-        let nutritionDiv = document.createElement('div');
-        nutritionDiv.className = 'col-9';
-        nutritionDiv.id = 'nutrition_info';
-        nutritionDiv.innerHTML = `
-            <p><strong style="font-size: 18px;">영양 정보 (1회 제공량당)</strong></p>
-            <p>열량: ${calories}kcal</p>
-            <p>탄수화물: ${carbohydrates}g</p>
-            <p>단백질: ${protein}g</p>
-            <p>지방: ${fat}g</p>
-            <p>나트륨: ${sodium}mg</p>
-        `;
-        nutritionSection.appendChild(nutritionDiv);
-
-        if (rcp_na_tip && rcp_na_tip.trim().length > 0) {
-            let tipsDiv = document.createElement('div');
-            tipsDiv.className = 'col-9';
-            tipsDiv.id = 'tips';
-            let tipsTitle = document.createElement('p');
-            tipsTitle.innerHTML = '<strong style="font-size: 18px;">요리 TIP</strong>';
-            let tipsContent = document.createElement('p');
-            tipsContent.innerHTML = rcp_na_tip;
-            tipsDiv.appendChild(tipsTitle);
-            tipsDiv.appendChild(tipsContent);
-            tipsSection.appendChild(tipsDiv);
-        }
-
-        if (manual1 && manual1.trim().length > 0) {
-            let cookingSequenceDiv = document.createElement('div');
-            cookingSequenceDiv.className = 'col-9 cooking-step';
-            cookingSequenceDiv.id = 'cooking_sequence';
-
-            let manuals = [manual1, manual2, manual3, manual4, manual5, manual6];
-            let images = [manual_img1, manual_img2, manual_img3, manual_img4, manual_img5, manual_img6];
-
-
-            for (let i = 0; i < manuals.length; i++) {
-                if (manuals[i] && manuals[i].trim().length > 0) {
-                    let sequenceHtml = '';
-                    if (i === 0) {
-                        sequenceHtml += '<br><p><strong style="font-size: 20px;">조리 순서</strong></p>';
-                    }
-                    if (manuals[i].trim().match(/^\d+\./)) {
-                        sequenceHtml += '<br>';
-                    }
-                    sequenceHtml += `${manuals[i]}<br>`;
-                    cookingSequenceDiv.innerHTML += sequenceHtml;
-
-                    if (images[i] && images[i].trim().length > 0) {
-                        let image = document.createElement('img');
-                        image.src = images[i];
-                        image.className = 'figure-img img-fluid rounded';
-                        cookingSequenceDiv.appendChild(image);
-                    }
-                    cookingSequenceDiv.innerHTML += '<br>';
-                }
-            }
-
-            cookingSequenceSection.appendChild(cookingSequenceDiv);
-        }
-    }
-
-    function getArticle() {
-        articleNo = getArticleNo();
-        const user_id = getUserId();
-
-        let formData = new FormData();
-        formData.append("articleNo", articleNo);
-        formData.append("user_id", user_id);
-
-        fetch('/api/article/display', {
-            method: 'POST',
-            body: formData
-        }).then((response) => {
-            return response.json();
-        }).then((resBody) => {
-            let article = resBody["article"];
-            displayArticle(article["recipeName"], article["ingredients"], article["cookingMethod"], article["cuisineType"],
-                article["calories"], article["carbohydrates"], article["protein"], article["fat"], article["sodium"],
-                article["att_file_no_mk"], article["rcp_na_tip"], article["manual1"], article["manual_img1"],article["manual2"], article["manual_img2"],
-                article["manual3"], article["manual_img3"], article["manual4"], article["manual_img4"],
-                article["manual5"], article["manual_img5"], article["manual6"], article["manual_img6"]);
-        }).catch((error) => {
-            console.error('Error in getArticle():', error);
-        });
-    }
-
-    window.addEventListener('load', getArticle);
-
-
-
-
-</script>
+<script type="text/javascript" src="/static/js/sidebar.js"></script>
+<script type="text/javascript" src="/static/js/similar_sidebar.js"></script>
+<script type="text/javascript" src="/static/js/signout.js"></script>
+<script type="text/javascript" src="/static/js/reply.js"></script>
+<script type="text/javascript" src="/static/js/display_article.js"></script>
 </html>

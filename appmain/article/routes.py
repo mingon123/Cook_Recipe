@@ -6,6 +6,7 @@ from appmain import app
 from appmain.utils import verifyJWT, getJWTContent
 from appmain.recommend import manage_user_visits
 from datetime import datetime
+from appmain.recommend.routes import find_similar_recipes, get_article_details
 
 article = Blueprint('article', __name__)
 
@@ -18,13 +19,13 @@ def get_db_connection():
         auth_plugin='mysql_native_password'
     )
 
-
+#첫페이지 레시피
 @article.route('/api/article/recent', methods=['GET'])
 def getRecentArticles():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 \
+    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 완성이미지 \
            FROM recipes_data1 ORDER BY 번호 DESC LIMIT 6'
 
     cursor.execute(SQL)
@@ -35,34 +36,36 @@ def getRecentArticles():
 
     recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "ingredients": article[2],
                           "cookingMethod": article[3], "cuisineType": article[4], "calories": article[5],
-                          "carbohydrates": article[6], "protein": article[7], "fat": article[8], "sodium": article[9]}
+                          "carbohydrates": article[6], "protein": article[7], "fat": article[8], "sodium": article[9],
+                          "image": article[10]}
                          for article in result]
 
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
 
 
+#상세페이지 api
 @article.route('/display_article/<int:articleNo>', methods=['GET'])
 def displayArticlePage(articleNo):
-    # user_id = request.args.get("user_id")
     user_id = session.get("user_id")
     # print("User ID:", user_id)
     if user_id:
         try:
             save_user_visit(str(user_id), articleNo)
-            return render_template('display_article.html', user_id=user_id)
+            similar_recipes = find_similar_recipes(articleNo, topn=5)
+            similar_recipes_info = [{"articleNo": recipe[0], "recipeName": get_article_details(recipe[0])[0], "image": get_article_details(recipe[0])[2]} for recipe in similar_recipes]
+            return render_template('display_article.html', user_id=user_id, similar_recipes=similar_recipes_info)
         except Exception as e:
             print(f"Error saving user visit: {e}")
 
     return send_from_directory(app.root_path, 'templates/display_article.html')
 
+#레시피 조회 기록 저장
 def save_user_visit(user_id, articleNo):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     visit_date = datetime.now()
 
-    # SQL = 'INSERT INTO user_visits (user_id, articleNo, visit_date) VALUES (%s, %s, %s)'
-    # cursor.execute(SQL, (user_id, articleNo, visit_date))
     cursor.execute('SELECT * FROM user_visits WHERE user_id = %s AND articleNo = %s', (user_id, articleNo))
     existing_visit = cursor.fetchone()
 
@@ -75,10 +78,10 @@ def save_user_visit(user_id, articleNo):
 
     conn.commit()
 
+    manage_user_visits()
+
     cursor.close()
     conn.close()
-
-    manage_user_visits()
 
 def translateCategory(catId):
     cuisineType = '기타'
@@ -100,6 +103,7 @@ def translateCategory(catId):
 
     return cuisineType
 
+#상세페이지
 @article.route('/api/article/display', methods=['GET', 'POST'])
 def displayArticle():
     data = request.form
@@ -151,6 +155,7 @@ def displayArticle():
     return make_response(jsonify(payload), 200)
 
 
+#검색
 @article.route('/api/article/search', methods=['POST'])
 def searchArticles():
     data = request.form
@@ -287,3 +292,59 @@ def searchArticles():
         payload = {"success": True, "articles": searchResults}
 
     return make_response(jsonify(payload), 200)
+
+@article.route('/api/article/recent_user_visits', methods=['GET'])
+def getRecentUserVisits():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "message": "로그인 상태가 아닙니다"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    SQL = '''
+    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지 
+    FROM user_visits rv 
+    JOIN recipes_data1 rd ON rv.articleNo = rd.번호 
+    WHERE rv.user_id = %s 
+    ORDER BY rv.visit_date DESC 
+    LIMIT 5
+    '''
+    cursor.execute(SQL, (user_id,))
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "image": article[2]}
+                         for article in result]
+
+    return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
+
+
+@article.route('/api/logout', methods=['POST'])
+def logout():
+    session.clear()  # 세션 데이터 정리
+    return make_response(jsonify({"success": True, "message": "Logged out successfully"}), 200)
+
+
+
+@article.route('/api/article/similar/<int:articleNo>', methods=['GET'])
+def getSimilarRecipes(articleNo):
+    similar_recipes = find_similar_recipes(articleNo, topn=5)
+    similar_recipes_info = []
+
+    for recipe in similar_recipes:
+        details = get_article_details(recipe[0])
+        if details:
+            similar_recipes_info.append({
+                "articleNo": recipe[0],
+                "recipeName": details[0] if len(details) > 0 else "N/A",
+                "image": details[2] if len(details) > 2 else "N/A"
+            })
+
+    return make_response(jsonify({"success": True, "similar_recipes": similar_recipes_info}), 200)
+
+
+
+

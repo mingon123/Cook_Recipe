@@ -1,13 +1,19 @@
-    function getArticleNo() {
-        const location = window.location.href;
-        const url = new URL(location);
-        const articleNo = url.pathname.split('/')[2];
+sessionStorage.setItem("user_id", "{{ user_id }}");
 
-        return articleNo;
-    }
+function getArticleNo() {
+    const location = window.location.href;
+    const url = new URL(location);
+    const articleNo = url.pathname.split('/')[2];
+
+    return articleNo;
+}
+
+function getUserId() {
+    return sessionStorage.getItem("user_id");
+}
 
 function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, calories, carbohydrates, protein, fat, sodium, att_file_no_mk, rcp_na_tip,
-                            manual1, manual_img1, manual2, manual_img2, manual3, manual_img3, manual4, manual_img4, manual5, manual_img5, manual6, manual_img6) {
+                        manual1, manual_img1, manual2, manual_img2, manual3, manual_img3, manual4, manual_img4, manual5, manual_img5, manual6, manual_img6) {
     const titleSection = document.querySelector('#article_title_div');
     const descSection = document.querySelector('#article_desc_div');
     const imageFigure = document.querySelector('#article_image_fig');
@@ -33,23 +39,23 @@ function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, cal
     descDiv.className = 'col-9';
     descDiv.id = 'article_desc';
     descDiv.innerHTML = `
-            <p><strong style="font-size: 20px;">재료</strong><br> ${ingredients}</p>
-            <br>
-            <p><strong style="font-size: 18px;">조리 방법:</strong> ${cookingMethod}</p>
-        `;
+        <p><strong style="font-size: 20px;">재료</strong><br> ${ingredients}</p>
+        <br>
+        <p><strong style="font-size: 18px;">조리 방법:</strong> ${cookingMethod}</p>
+    `;
     descSection.appendChild(descDiv);
 
     let nutritionDiv = document.createElement('div');
     nutritionDiv.className = 'col-9';
     nutritionDiv.id = 'nutrition_info';
     nutritionDiv.innerHTML = `
-            <p><strong style="font-size: 18px;">영양 정보 (1회 제공량당)</strong></p>
-            <p>열량: ${calories}kcal</p>
-            <p>탄수화물: ${carbohydrates}g</p>
-            <p>단백질: ${protein}g</p>
-            <p>지방: ${fat}g</p>
-            <p>나트륨: ${sodium}mg</p>
-        `;
+        <p><strong style="font-size: 18px;">영양 정보 (1회 제공량당)</strong></p>
+        <p>열량: ${calories}kcal</p>
+        <p>탄수화물: ${carbohydrates}g</p>
+        <p>단백질: ${protein}g</p>
+        <p>지방: ${fat}g</p>
+        <p>나트륨: ${sodium}mg</p>
+    `;
     nutritionSection.appendChild(nutritionDiv);
 
     if (rcp_na_tip && rcp_na_tip.trim().length > 0) {
@@ -72,7 +78,6 @@ function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, cal
 
         let manuals = [manual1, manual2, manual3, manual4, manual5, manual6];
         let images = [manual_img1, manual_img2, manual_img3, manual_img4, manual_img5, manual_img6];
-
 
         for (let i = 0; i < manuals.length; i++) {
             if (manuals[i] && manuals[i].trim().length > 0) {
@@ -100,12 +105,13 @@ function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, cal
     }
 }
 
-
 function getArticle() {
     articleNo = getArticleNo();
+    const user_id = getUserId();
 
     let formData = new FormData();
     formData.append("articleNo", articleNo);
+    formData.append("user_id", user_id);
 
     fetch('/api/article/display', {
         method: 'POST',
@@ -124,4 +130,26 @@ function getArticle() {
     });
 }
 
-window.addEventListener('load', getArticle);
+
+function fetchSimilarRecipes() {
+    const articleNo = getArticleNo();
+
+    fetch(`/api/article/similar/${articleNo}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then((response) => {
+        return response.json();
+    }).then((resBody) => {
+        const similarRecipes = resBody["similar_recipes"];
+        displaySimilarRecipes(similarRecipes);
+    }).catch((error) => {
+        console.log('[Error]fetchSimilarRecipes():', error);
+    });
+}
+
+window.addEventListener('load', () => {
+    getArticle();
+    fetchSimilarRecipes();
+});
