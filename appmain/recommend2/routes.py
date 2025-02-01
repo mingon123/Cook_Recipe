@@ -1,0 +1,316 @@
+import os
+from flask import Blueprint, send_from_directory, make_response, jsonify, session, current_app as app, render_template
+import mysql.connector
+from appmain import app
+from appmain.recommend import manage_user_visits
+from datetime import datetime
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import torch
+from torch import nn
+from transformers import BertTokenizer, BertModel
+
+recommend2 = Blueprint('recommend2', __name__)
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="0000",
+        database="recipes",
+        auth_plugin='mysql_native_password'
+    )
+
+file_path = os.path.join(os.path.dirname(__file__), 'processed_recipes.csv')
+df = pd.read_csv(file_path, sep='\t', encoding='cp949')
+
+df = df[['recipeName', 'ingredients']]
+df['ingredients'] = df['ingredients'].astype(str).fillna('')
+
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+
+# TinyBERT 모델 로드
+tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
+tinybert_model = BertModel.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
+
+# 임베딩 생성 함수
+def generate_embeddings(model, tokenizer, texts):
+    inputs = tokenizer(texts, return_tensors='pt', padding=True, truncation=True, max_length=512)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.last_hidden_state[:, 0, :].numpy()
+
+# 임베딩 캐싱을 위한 딕셔너리
+embedding_cache = {}
+
+# TinyBERT 임베딩 생성
+def get_tinybert_embeddings(texts):
+    embeddings = []
+    for text in texts:
+        if text in embedding_cache:
+            embeddings.append(embedding_cache[text])
+        else:
+            embedding = generate_embeddings(tinybert_model, tokenizer, [text])[0]
+            embedding_cache[text] = embedding
+            embeddings.append(embedding)
+    return np.array(embeddings)
+
+tinybert_train_embeddings = generate_embeddings(tinybert_model, tokenizer, train_df['ingredients'].tolist())
+tinybert_test_embeddings = generate_embeddings(tinybert_model, tokenizer, test_df['ingredients'].tolist())
+
+# 임베딩을 DataFrame에 추가
+train_df['embeddings'] = list(tinybert_train_embeddings)
+test_df['embeddings'] = list(tinybert_test_embeddings)
+
+
+
+
+
+# Poly-Encoder 클래스 정의
+class PolyEncoder(nn.Module):
+    def __init__(self, bert_model_name='bert-base-uncased', poly_m=16):
+        super(PolyEncoder, self).__init__()
+        self.poly_m = poly_m
+        self.bert = BertModel.from_pretrained(bert_model_name)
+        self.poly_code_embeddings = nn.Parameter(torch.randn(poly_m, self.bert.config.hidden_size))
+
+    def forward(self, context_input_ids, context_attention_mask, candidate_input_ids, candidate_attention_mask):
+        # 인코딩
+        context_outputs = self.bert(input_ids=context_input_ids, attention_mask=context_attention_mask)
+        candidate_outputs = self.bert(input_ids=candidate_input_ids, attention_mask=candidate_attention_mask)
+
+        # Context와 Candidate 임베딩 추출
+        context_embeddings = context_outputs.last_hidden_state[:, 0, :]  # [CLS] 토큰 임베딩 사용
+        candidate_embeddings = candidate_outputs.last_hidden_state[:, 0, :]  # [CLS] 토큰 임베딩 사용
+
+        # Poly-Encoder Context 요약
+        poly_code_embeddings_expanded = self.poly_code_embeddings.unsqueeze(0).expand(context_embeddings.size(0), -1, -1)  # (batch_size, poly_m, hidden_size)
+
+        context_poly_similarity = torch.bmm(poly_code_embeddings_expanded, context_embeddings.unsqueeze(-1)).squeeze(-1)  # (batch_size, poly_m)
+        context_poly_similarity = torch.nn.functional.softmax(context_poly_similarity, dim=1)
+
+        context_poly_embeddings = torch.bmm(context_poly_similarity.unsqueeze(1), poly_code_embeddings_expanded).squeeze(1)  # (batch_size, hidden_size)
+
+        # 유사도 계산
+        similarities = torch.nn.functional.cosine_similarity(context_poly_embeddings, candidate_embeddings)
+        return similarities
+
+# BERT 모델 로드 및 Poly-Encoder 모델 초기화
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+poly_encoder_model = PolyEncoder(bert_model_name='bert-base-uncased', poly_m=16)
+
+# 유사도 계산 함수
+def calculate_similarity_poly_encoder(model, tokenizer, context, candidates):
+    context_inputs = tokenizer([context], return_tensors='pt', padding=True, truncation=True, max_length=128)
+    candidate_inputs = tokenizer(candidates, return_tensors='pt', padding=True, truncation=True, max_length=128)
+
+    with torch.no_grad():
+        similarities = model(
+            context_input_ids=context_inputs['input_ids'],
+            context_attention_mask=context_inputs['attention_mask'],
+            candidate_input_ids=candidate_inputs['input_ids'],
+            candidate_attention_mask=candidate_inputs['attention_mask']
+        )
+
+    return similarities.numpy().flatten()
+
+
+
+
+# 평균 유사도 계산 및 출력
+context = "example context ingredient"
+candidates = ["candidate ingredient 1", "candidate ingredient 2", "candidate ingredient 3"]
+
+similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
+average_similarity = np.mean(similarities)
+
+print(f"평균 유사도: {average_similarity:.4f}")
+
+
+
+
+
+
+
+
+@recommend2.route('/recommend2')
+def show_recommend():
+    topn = 20
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "message": "로그인 되어 있지 않습니다"}), 404
+
+    recommended_recipes, error_message = get_recommended_recipes(topn, user_id)
+    if error_message:
+        return jsonify({"success": False, "message": error_message}), 404
+
+    return render_template('recommend2.html', recommended_recipes=recommended_recipes)
+
+@recommend2.route('/api/recommend2', methods=['GET'])
+def api_get_recommended_recipes():
+    topn = 20
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "message": "사용자 ID를 찾을 수 없습니다."}), 404
+
+    recommended_recipes, error_message = get_recommended_recipes(topn, user_id)
+    if error_message:
+        return jsonify({"success": False, "message": error_message}), 404
+
+    return jsonify({"success": True, "recommended_recipes": recommended_recipes}), 200
+
+def get_recommended_recipes(topn, user_id, similarity_threshold=0.1):
+    recently_visited = get_recently_visited_recipes(user_id)
+    if not recently_visited:
+        return None, "최근에 조회한 레시피가 없습니다"
+
+    recommendations = []
+    seen_recipes = set(recently_visited)
+
+    for articleNo in recently_visited:
+        article_details = get_article_details(articleNo)
+        if article_details and article_details[1] in test_df['recipeName'].values:
+            context = article_details[1]
+            candidates = test_df['ingredients'].tolist()
+            similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
+
+            similar_recipes = test_df.iloc[np.argsort(similarities)[-topn:]]
+
+            for idx, recipe in enumerate(similar_recipes.itertuples()):
+                similar_article_details = get_article_details_by_name(recipe.recipeName)
+                if similar_article_details and similar_article_details[0] not in seen_recipes:
+                    seen_recipes.add(similar_article_details[0])
+                    recommendations.append({
+                        "articleNo": similar_article_details[0],
+                        "recipeName": recipe.recipeName,
+                        "ingredients": similar_article_details[2],
+                        "cookingMethod": similar_article_details[3],
+                        "cuisineType": similar_article_details[4],
+                        "calories": similar_article_details[5],
+                        "carbohydrates": similar_article_details[6],
+                        "protein": similar_article_details[7],
+                        "fat": similar_article_details[8],
+                        "sodium": similar_article_details[9],
+                        "similarity": float(similarities[idx])
+                    })
+
+    recommendations.sort(key=lambda x: x["similarity"], reverse=True)
+    return recommendations[:20], None
+
+
+def get_recently_visited_recipes(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    SQL = 'SELECT articleNo FROM user_visits WHERE user_id = %s ORDER BY visit_date DESC LIMIT 10'
+    cursor.execute(SQL, (user_id,))
+    recently_visited = [row[0] for row in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
+    return recently_visited
+
+def get_article_details(articleNo):
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+
+    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 번호 = %s'
+    cursor.execute(SQL, (articleNo,))
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+def get_article_details_by_name(recipeName):
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+
+    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 메뉴명 = %s'
+    cursor.execute(SQL, (recipeName,))
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+# 레시피 상세포인트 표시 엔드포인트
+@recommend2.route('/display_article/<int:articleNo>', methods=['GET'])
+def displayArticlePage(articleNo):
+    user_id = session.get("user_id")
+    # print("User ID:", user_id)
+    if user_id:
+        try:
+            save_user_visit(str(user_id), articleNo)
+            return render_template('display_article.html', user_id=user_id)
+        except Exception as e:
+            print(f"Error saving user visit: {e}")
+
+    return send_from_directory(app.root_path, 'templates/display_article.html')
+
+
+# 레시피 조회 기록 저장
+def save_user_visit(user_id, articleNo):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    visit_date = datetime.now()
+
+    cursor.execute('SELECT * FROM user_visits WHERE user_id = %s AND articleNo = %s', (user_id, articleNo))
+    existing_visit = cursor.fetchone()
+
+    if existing_visit:
+        SQL = 'UPDATE user_visits SET visit_date = %s WHERE user_id = %s AND articleNo = %s'
+        cursor.execute(SQL, (visit_date, user_id, articleNo))
+    else:
+        SQL = 'INSERT INTO user_visits (user_id, articleNo, visit_date) VALUES (%s, %s, %s)'
+        cursor.execute(SQL, (user_id, articleNo, visit_date))
+
+    conn.commit()
+
+    manage_user_visits()
+
+    cursor.close()
+    conn.close()
+
+#로그인 기록 가져옴(사이드바)
+@recommend2.route('/api/article/recent_user_visits', methods=['GET'])
+def getRecentUserVisits():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "message": "User not logged in"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    SQL = '''
+    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지
+    FROM user_visits rv
+    JOIN recipes_data1 rd ON rv.articleNo = rd.번호
+    WHERE rv.user_id = %s
+    ORDER BY rv.visit_date DESC
+    LIMIT 5
+    '''
+    cursor.execute(SQL, (user_id,))
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "image": article[2]}
+                         for article in result]
+
+    return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
+
+#로그아웃
+@recommend2.route('/api/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return make_response(jsonify({"success": True, "message": "Logged out successfully"}), 200)
+
