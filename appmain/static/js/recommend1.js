@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const recentArticlesDiv = document.querySelector('#recent_articles_div');
+    const footerMessage = document.getElementById('footer_message');
 
     function displayRecentArticles(articles) {
         const container = document.getElementById('recent_articles_div');
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const articleElement = `
                     <h5 class="card-header" style="background-color: #c0c0c0;">
-                        <a class="link-primary text-decoration-none" href="#" data-articleNo="${article.articleNo}">
+                        <a class="link-primary text-decoration-none" href="/display_article/${article.articleNo}">
                             ${article.recipeName}
                         </a>
                     </h5>
@@ -25,14 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 cardDiv.innerHTML = articleElement;
                 container.appendChild(cardDiv);
-            });
-
-            container.querySelectorAll('a[data-articleNo]').forEach(link => {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const articleNo = this.getAttribute('data-articleNo');
-                    window.location.href = `/display_article/${articleNo}`;
-                });
             });
         } else {
             const errorMessage = document.createElement('p');
@@ -55,10 +48,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then((resBody) => {
             const recommendedRecipes = resBody["recommended_recipes"];
             displayRecentArticles(recommendedRecipes);
+            footerMessage.style.display = 'block';
         }).catch((error) => {
             console.log('[Error]fetchRecentArticles():', error);
         });
     }
 
     fetchRecentArticles();
+    fetchRecentViewedArticles();
 });

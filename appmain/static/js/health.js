@@ -3,6 +3,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (authToken) {
         fetchHealthInfo(authToken);
     }
+
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateLocalStorage);
+    });
 });
 
 function fetchHealthInfo(authToken) {
@@ -28,10 +33,20 @@ function fetchHealthInfo(authToken) {
             document.getElementById('weight').value = data.healthInfo.weight;
             document.getElementById('allergies').value = data.healthInfo.allergies;
 
-            document.getElementById('weight_loss').checked = !!data.healthInfo.weight_loss;
-            document.getElementById('diabetes').checked = !!data.healthInfo.diabetes;
-            document.getElementById('high_bp').checked = !!data.healthInfo.high_bp;
-            document.getElementById('cholesterol').checked = !!data.healthInfo.cholesterol;
+            document.getElementById('weight_loss').checked = data.healthInfo.weight_loss;
+            document.getElementById('diabetes').checked = data.healthInfo.diabetes;
+            document.getElementById('high_bp').checked = data.healthInfo.high_bp;
+            document.getElementById('cholesterol').checked = data.healthInfo.cholesterol;
+
+            // Update checkboxes based on localStorage values
+            const diabetes = localStorage.getItem('diabetes') === 'true';
+            document.getElementById('diabetes').checked = diabetes;
+
+            const high_bp = localStorage.getItem('high_bp') === 'true';
+            document.getElementById('high_bp').checked = high_bp;
+
+            const cholesterol = localStorage.getItem('cholesterol') === 'true';
+            document.getElementById('cholesterol').checked = cholesterol;
         } else {
             console.error('정보를 불러오는 데 실패했습니다.');
         }
@@ -39,6 +54,17 @@ function fetchHealthInfo(authToken) {
     .catch(error => {
         console.error('Error:', error);
     });
+}
+
+function updateLocalStorage() {
+    const diabetes = document.getElementById('diabetes').checked;
+    localStorage.setItem('diabetes', diabetes);
+
+    const high_bp = document.getElementById('high_bp').checked;
+    localStorage.setItem('high_bp', high_bp);
+
+    const cholesterol = document.getElementById('cholesterol').checked;
+    localStorage.setItem('cholesterol', cholesterol);
 }
 
 function calculateBMI() {
@@ -62,17 +88,11 @@ function submitHealthInfo() {
     const allergies = document.getElementById('allergies').value;
 
     const weight_loss = document.getElementById('weight_loss').checked;
-    const diabetes = document.getElementById('diabetes').checked;
-    const high_bp = document.getElementById('high_bp').checked;
-    const cholesterol = document.getElementById('cholesterol').checked;
+    const diabetes = document.getElementById('diabetes').checked || localStorage.getItem('diabetes') === 'true';
+    const high_bp = document.getElementById('high_bp').checked || localStorage.getItem('high_bp') === 'true';
+    const cholesterol = document.getElementById('cholesterol').checked || localStorage.getItem('cholesterol') === 'true';
 
     calculateBMI();
-
-    const healthConditions = [];
-    if (weight_loss) healthConditions.push('weight_loss');
-    if (diabetes) healthConditions.push('diabetes');
-    if (high_bp) healthConditions.push('high_bp');
-    if (cholesterol) healthConditions.push('cholesterol');
 
     fetch('/api/user/health', {
         method: 'POST',

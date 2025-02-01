@@ -142,14 +142,17 @@ function fetchSimilarRecipes() {
     }).then((response) => {
         return response.json();
     }).then((resBody) => {
-        const similarRecipes = resBody["similar_recipes"];
-        displaySimilarRecipes(similarRecipes);
+        if (resBody.success) {
+            displaySimilarRecipes(resBody.similar_recipes);
+        } else {
+            console.log('유사한 레시피를 찾을 수 없습니다.');
+        }
     }).catch((error) => {
         console.log('[Error]fetchSimilarRecipes():', error);
     });
 }
 
 window.addEventListener('load', () => {
-    getArticle();
+    getArticle();s
     fetchSimilarRecipes();
 });

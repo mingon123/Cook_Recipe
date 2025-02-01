@@ -183,6 +183,17 @@ def updateMyInfo():
 def health():
     return send_from_directory(app.root_path, 'templates/health.html')
 
+@app.route('/diabetes_check')
+def diabetes_check():
+    return send_from_directory(app.root_path, 'templates/diabetes_check.html')
+
+@app.route('/high_bp_check')
+def high_bp_check():
+    return send_from_directory(app.root_path, 'templates/high_bp_check.html')
+
+@app.route('/cholesterol_check')
+def cholesterol_check():
+    return send_from_directory(app.root_path, 'templates/cholesterol_check.html')
 
 @user.route('/api/user/health', methods=['POST'])
 def updateHealthInfo():
@@ -222,6 +233,7 @@ def updateHealthInfo():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
 @user.route('/api/user/health', methods=['GET'])
 def getHealthInfo():
     authToken = request.headers.get('Authorization')
@@ -256,4 +268,5 @@ def getHealthInfo():
         return jsonify({"success": True, "healthInfo": health_info})
     else:
         return jsonify({"success": False, "message": "건강 정보를 찾을 수 없습니다."}), 404
+
 

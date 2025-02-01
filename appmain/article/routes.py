@@ -4,9 +4,9 @@ from flask import Blueprint, send_from_directory, make_response, jsonify, reques
 import mysql.connector
 from appmain import app
 from appmain.utils import verifyJWT, getJWTContent
-from appmain.recommend import manage_user_visits
+from appmain.recommend1 import manage_user_visits
 from datetime import datetime
-from appmain.recommend.routes import find_similar_recipes, get_article_details
+from appmain.recommend1.routes import find_similar_recipes, get_article_details
 
 article = Blueprint('article', __name__)
 
@@ -221,11 +221,11 @@ def searchArticles():
         else:
             order_clause = 'ORDER BY 번호 DESC'
 
-        if user_health[4] == 1:  # diabetes
+        if user_health[4] == 1:  # 당뇨병
             condition_statements.append('탄수화물 < 20')
-        if user_health[5] == 1:  # high_bp
+        if user_health[5] == 1:  # 고혈압
             condition_statements.append('나트륨 < 140')
-        if user_health[6] == 1:  # cholesterol
+        if user_health[6] == 1:  # 고지혈증
             condition_statements.append('지방 < 20')
 
         if condition_statements:

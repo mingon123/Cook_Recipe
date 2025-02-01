@@ -8,7 +8,7 @@ document.getElementById('signout_link').addEventListener('click', function () {
         return response.json();
     }).then((resBody) => {
         if (resBody.success) {
-            window.location.reload();
+            window.location.href = '/home';
         } else {
             alert('로그아웃에 실패했습니다.');
         }
