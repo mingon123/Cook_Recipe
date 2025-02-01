@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/title.css">
+    <title>CookRecipe</title>
+    <style>
+        .container { margin-top: 20px; }
+        .form-group { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row navbar bg-light align-items-center">
+            <div class="col-6">
+                <a class="nav-link" href="/home"><h4>CookRecipe</h4></a>
+            </div>
+            <div class="col-6">
+                <ul class="nav justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link" id="signup_link" href="/signup">회원가입</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signin_link" href="/signin">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signout_link" href="#">로그아웃</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="myinfo_link" href="/myinfo">마이페이지</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend1_link" href="/recommend1">추천 레시피1</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend2_link" href="/recommend2">추천 레시피2</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend3_link" href="/recommend3">추천 레시피3</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <br><h4>고혈압 자가진단</h4></br>
+                <form id="high_bp_check_form">
+                    <div class="form-group">
+                        <input type="checkbox" id="numbness" name="numbness" value="numbness">
+                        <label for="numbness">손발이 저리다.</label><br>
+                        <input type="checkbox" id="headache" name="headache" value="headache">
+                        <label for="headache">두통이 자주 발생한다. 특히 아침에 심하다.</label><br>
+                        <input type="checkbox" id="dizziness" name="dizziness" value="dizziness">
+                        <label for="dizziness">어지러움증이 있다.</label><br>
+                        <input type="checkbox" id="palpitations" name="palpitations" value="palpitations">
+                        <label for="palpitations">심장이 두근거린다.</label><br>
+                        <input type="checkbox" id="fatigue" name="fatigue" value="fatigue">
+                        <label for="fatigue">쉽게 피로하다.</label><br>
+                        <input type="checkbox" id="nosebleeds" name="nosebleeds" value="nosebleeds">
+                        <label for="nosebleeds">코피가 자주 난다.</label><br>
+                        <input type="checkbox" id="blurred_vision" name="blurred_vision" value="blurred_vision">
+                        <label for="blurred_vision">시야가 흐려지곤 한다.</label><br>
+                        <input type="checkbox" id="sudden_weakness" name="sudden_weakness" value="sudden_weakness">
+                        <label for="sudden_weakness">갑자기 힘이 빠졌다가 금세 회복된다.</label><br>
+                        <input type="checkbox" id="chest_pain" name="chest_pain" value="chest_pain">
+                        <label for="chest_pain">가슴이 조이듯이 아프고 답답하다.</label><br>
+                        <input type="checkbox" id="breathing_difficulty" name="breathing_difficulty" value="breathing_difficulty">
+                        <label for="breathing_difficulty">호흡이 불편하다.</label><br>
+                        <input type="checkbox" id="easy_breathlessness" name="easy_breathlessness" value="easy_breathlessness">
+                        <label for="easy_breathlessness">조금만 움직여도 숨이 차다.</label><br>
+                        <input type="checkbox" id="tinnitus" name="tinnitus" value="tinnitus">
+                        <label for="tinnitus">귀에서 소리가 난다.</label><br>
+                        <input type="checkbox" id="mental_confusion" name="mental_confusion" value="mental_confusion">
+                        <label for="mental_confusion">정신이 혼란하고 착란 증세가 있다.</label><br>
+                        <input type="checkbox" id="mumbling" name="mumbling" value="mumbling">
+                        <label for="mumbling">혼자 중얼중얼한다.</label><br>
+                        <input type="checkbox" id="abnormal_behavior" name="abnormal_behavior" value="abnormal_behavior">
+                        <label for="abnormal_behavior">전반적인 행동이 일상에서 벗어난다.</label><br>
+                        <input type="checkbox" id="frequent_medication" name="frequent_medication" value="frequent_medication">
+                        <label for="frequent_medication">만성질환 치료제나 진통제의 복용이 잦다.</label><br>
+                        <input type="checkbox" id="constant_fatigue" name="constant_fatigue" value="constant_fatigue">
+                        <label for="constant_fatigue">피로감을 늘 느낀다.</label><br>
+                        <input type="checkbox" id="family_history" name="family_history" value="family_history">
+                        <label for="family_history">부모님 중 고혈압 환자가 있다.</label><br>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="submitHighBPCheck()">결과 확인</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="/static/js/navbar.js"></script>
+<script>
+function submitHighBPCheck() {
+    const symptoms = [
+        document.getElementById('numbness').checked,
+        document.getElementById('headache').checked,
+        document.getElementById('dizziness').checked,
+        document.getElementById('palpitations').checked,
+        document.getElementById('fatigue').checked,
+        document.getElementById('nosebleeds').checked,
+        document.getElementById('blurred_vision').checked,
+        document.getElementById('sudden_weakness').checked,
+        document.getElementById('chest_pain').checked,
+        document.getElementById('breathing_difficulty').checked,
+        document.getElementById('easy_breathlessness').checked,
+        document.getElementById('tinnitus').checked,
+        document.getElementById('mental_confusion').checked,
+        document.getElementById('mumbling').checked,
+        document.getElementById('abnormal_behavior').checked,
+        document.getElementById('frequent_medication').checked,
+        document.getElementById('constant_fatigue').checked,
+        document.getElementById('family_history').checked
+    ];
+
+    const highBPSymptomsCount = symptoms.filter(Boolean).length;
+    if (highBPSymptomsCount >= 11) {
+        localStorage.setItem('high_bp', 'true');
+    } else {
+        localStorage.setItem('high_bp', 'false');
+    }
+
+    window.location.href = '/health';
+}
+</script>
+</html>

@@ -7,13 +7,14 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
+import torch
+from torch import nn
+from transformers import BertTokenizer, BertModel
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
-import faiss
-from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 
-recommend2 = Blueprint('recommend2', __name__)
+recommend3 = Blueprint('recommend3', __name__)
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -33,6 +34,7 @@ df['ingredients'] = df['ingredients'].astype(str).fillna('')
 train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
 sbert_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
 
 # 임베딩 생성 함수
 def generate_embeddings(model, texts):
@@ -42,120 +44,61 @@ def generate_embeddings(model, texts):
 sbert_train_embeddings = generate_embeddings(sbert_model, train_df['ingredients'].tolist())
 sbert_test_embeddings = generate_embeddings(sbert_model, test_df['ingredients'].tolist())
 
+
 # 임베딩을 DataFrame에 추가
 train_df['embeddings'] = list(sbert_train_embeddings)
 test_df['embeddings'] = list(sbert_test_embeddings)
 
 
-# # Faiss 인덱스 생성 및 학습
-# embedding_size = weighted_train_embeddings.shape[1]
-# index = faiss.IndexFlatL2(embedding_size)
-# index.add(np.vstack(train_df['embeddings'].values))
+
+
+
+# Poly-Encoder 클래스 정의
+class PolyEncoder(nn.Module):
+    def __init__(self, bert_model_name='huawei-noah/TinyBERT_General_4L_312D', poly_m=16):
+        super(PolyEncoder, self).__init__()
+        self.poly_m = poly_m
+        self.bert = BertModel.from_pretrained(bert_model_name).to('cuda')
+        self.poly_code_embeddings = nn.Parameter(torch.randn(poly_m, self.bert.config.hidden_size).to('cuda'))
+
+    def forward(self, context_input_ids, context_attention_mask, candidate_input_ids, candidate_attention_mask):
+        context_outputs = self.bert(input_ids=context_input_ids, attention_mask=context_attention_mask)
+        candidate_outputs = self.bert(input_ids=candidate_input_ids, attention_mask=candidate_attention_mask)
+        context_embeddings = context_outputs.last_hidden_state[:, 0, :]
+        candidate_embeddings = candidate_outputs.last_hidden_state[:, 0, :]
+        poly_code_embeddings_expanded = self.poly_code_embeddings.unsqueeze(0).expand(context_embeddings.size(0), -1, -1)
+        context_poly_similarity = torch.bmm(poly_code_embeddings_expanded, context_embeddings.unsqueeze(-1)).squeeze(-1)
+        context_poly_similarity = torch.nn.functional.softmax(context_poly_similarity, dim=1)
+        context_poly_embeddings = torch.bmm(context_poly_similarity.unsqueeze(1), poly_code_embeddings_expanded).squeeze(1)
+        similarities = torch.nn.functional.cosine_similarity(context_poly_embeddings, candidate_embeddings)
+        return similarities
+
+poly_encoder_model = PolyEncoder(bert_model_name='huawei-noah/TinyBERT_General_4L_312D', poly_m=16).to('cuda')
+tokenizer = BertTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
+
+def calculate_similarity_poly_encoder(model, tokenizer, context, candidates):
+    context_inputs = tokenizer([context], return_tensors='pt', padding=True, truncation=True, max_length=128).to('cuda')
+    candidate_inputs = tokenizer(candidates, return_tensors='pt', padding=True, truncation=True, max_length=128).to('cuda')
+    with torch.no_grad():
+        similarities = model(
+            context_input_ids=context_inputs['input_ids'],
+            context_attention_mask=context_inputs['attention_mask'],
+            candidate_input_ids=candidate_inputs['input_ids'],
+            candidate_attention_mask=candidate_inputs['attention_mask']
+        )
+    return similarities.cpu().numpy().flatten()
+
+
+
+
+# # 평균 유사도 계산 및 출력
+# context = "example context ingredient"
+# candidates = ["candidate ingredient 1", "candidate ingredient 2", "candidate ingredient 3"]
 #
-# # Faiss 유사도 계산 함수
-# def get_recommendations_faiss(target_embedding, df, index, top_n=5):
-#     target_embedding = np.expand_dims(target_embedding, axis=0)
-#     distances, indices = index.search(target_embedding, top_n + 1)
-#     recommended_indices = indices[0][1:]
-#     similarities = 1 / (1 + distances[0][1:])
-#     return df.iloc[recommended_indices], similarities
-
-
-
-
-#패키지 쓰지 않고 코사인 유사도 + 유클리드 거리 계산
-def cosine_similarity_manual(vec1, vec2):
-    dot_product = np.dot(vec1, vec2)
-    norm_vec1 = np.linalg.norm(vec1)
-    norm_vec2 = np.linalg.norm(vec2)
-    return dot_product / (norm_vec1 * norm_vec2)
-
-def euclidean_distance_manual(vec1, vec2):
-    return np.sqrt(np.sum((vec1 - vec2) ** 2))
-
-def combined_similarity(vec1, vec2, alpha=0.5):
-    cos_sim = cosine_similarity_manual(vec1, vec2)
-    euc_dist = euclidean_distance_manual(vec1, vec2)
-    euc_sim = 1 / (1 + euc_dist)
-    combined_sim = alpha * cos_sim + (1 - alpha) * euc_sim
-    return combined_sim
-
-def get_recommendations_combined(target_embedding, embeddings, df, top_n=5, alpha=0.5):
-    similarities = np.array([combined_similarity(target_embedding, embedding, alpha) for embedding in embeddings])
-    top_indices = similarities.argsort()[-top_n:][::-1]
-    return df.iloc[top_indices], similarities[top_indices]
-
-
-
-
-# # 코사인 유사도
-# def get_recommendations_cosine(target_embedding, train_embeddings, train_df, top_n=5):
-#     similarities = cosine_similarity(target_embedding, train_embeddings)[0]
-#     top_indices = similarities.argsort()[-top_n-1:-1][::-1]
-#     return train_df.iloc[top_indices], similarities[top_indices]
+# similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
+# average_similarity = np.mean(similarities)
 #
-# # 유클리드 거리
-# def get_recommendations_euclidean(target_embedding, embeddings, df, top_n=5):
-#     distances = euclidean_distances(target_embedding, embeddings)[0]
-#     top_indices = distances.argsort()[:top_n]
-#     return df.iloc[top_indices], distances[top_indices]
-
-
-
-
-# 코사인유사도 + 유클리드 거리 계산
-def hybrid_similarity(vec1, vec2, alpha=0.5):
-    cos_sim = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-    euc_dist = np.linalg.norm(vec1 - vec2)
-    return alpha * cos_sim + (1 - alpha) * (1 / (1 + euc_dist))
-
-def get_recommendations_hybrid(target_embedding, df, embeddings, top_n=5):
-    similarities = np.array([hybrid_similarity(target_embedding, emb) for emb in embeddings])
-    top_indices = similarities.argsort()[-top_n:][::-1]
-    return df.iloc[top_indices], similarities[top_indices]
-
-
-
-#
-# # 유사도 계산 및 평균 유사도 계산 함수
-# def calculate_average_similarity(method, target_embedding, df, embeddings, index=None):
-#     if method == 'faiss':
-#         _, similarities = get_recommendations_faiss(target_embedding, df, index)
-#     elif method == 'combined':
-#         _, similarities = get_recommendations_combined(target_embedding, embeddings, df)
-#     elif method == 'hybrid':
-#         _, similarities = get_recommendations_hybrid(target_embedding, df, embeddings)
-#     return np.mean(similarities)
-#
-# # 검증 셋과 테스트 셋의 각 레시피에 대해 평균 유사도 계산
-# methods = ['faiss', 'combined', 'hybrid']
-# average_similarities_val = {method: [] for method in methods}
-# average_similarities_test = {method: [] for method in methods}
-#
-# # 검증 셋에 대한 평균 유사도 계산
-# for i in range(len(train_df)):
-#     target_embedding = train_df['embeddings'].iloc[i]
-#     for method in methods:
-#         avg_sim = calculate_average_similarity(method, target_embedding, train_df, np.vstack(train_df['embeddings'].values), index)
-#         average_similarities_val[method].append(avg_sim)
-#
-# # 테스트 셋에 대한 평균 유사도 계산
-# for i in range(len(test_df)):
-#     target_embedding = test_df['embeddings'].iloc[i]
-#     for method in methods:
-#         avg_sim = calculate_average_similarity(method, target_embedding, train_df, np.vstack(train_df['embeddings'].values), index)
-#         average_similarities_test[method].append(avg_sim)
-#
-# # # 각 방법의 전체 평균 유사도 출력
-# # print("검증 데이터에 대한 평균 유사도 평가:")
-# # for method in methods:
-# #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_val[method]))
-# #
-# # print("테스트 데이터에 대한 평균 유사도 평가:")
-# # for method in methods:
-# #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_test[method]))
-#
-#
+# print(f"평균 유사도: {average_similarity:.4f}")
 
 
 
@@ -163,7 +106,8 @@ def get_recommendations_hybrid(target_embedding, df, embeddings, top_n=5):
 
 
 
-@recommend2.route('/recommend2')
+
+@recommend3.route('/recommend3')
 def show_recommend():
     topn = 20
     user_id = session.get("user_id")
@@ -174,9 +118,9 @@ def show_recommend():
     if error_message:
         return jsonify({"success": False, "message": error_message}), 404
 
-    return render_template('recommend2.html', recommended_recipes=recommended_recipes)
+    return render_template('recommend3.html', recommended_recipes=recommended_recipes)
 
-@recommend2.route('/api/recommend2', methods=['GET'])
+@recommend3.route('/api/recommend3', methods=['GET'])
 def api_get_recommended_recipes():
     topn = 20
     user_id = session.get("user_id")
@@ -189,7 +133,7 @@ def api_get_recommended_recipes():
 
     return jsonify({"success": True, "recommended_recipes": recommended_recipes}), 200
 
-def get_recommended_recipes(topn, user_id):
+def get_recommended_recipes(topn, user_id, similarity_threshold=0.1):
     recently_visited = get_recently_visited_recipes(user_id)
     if not recently_visited:
         return None, "최근에 조회한 레시피가 없습니다"
@@ -200,17 +144,19 @@ def get_recommended_recipes(topn, user_id):
     for articleNo in recently_visited:
         article_details = get_article_details(articleNo)
         if article_details and article_details[1] in test_df['recipeName'].values:
-            target_embedding = test_df.loc[test_df['recipeName'] == article_details[1], 'embeddings'].values[0]
-            # similar_recipes, similarities = get_recommendations_faiss(target_embedding, train_df, index, topn)
-            # similar_recipes, similarities = get_recommendations_combined(target_embedding, np.vstack(train_df['embeddings'].values), train_df, topn)
-            similar_recipes, similarities = get_recommendations_hybrid(target_embedding, train_df, np.vstack(train_df['embeddings'].values), topn)
-            for idx, (_, recipe) in enumerate(similar_recipes.iterrows()):
-                similar_article_details = get_article_details_by_name(recipe['recipeName'])
+            context = article_details[1]
+            candidates = test_df['recipeName'].tolist()  # 후보 레시피 이름 목록
+            similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
+
+            similar_recipes = test_df.iloc[np.argsort(similarities)[-topn:]]
+
+            for idx, recipe in enumerate(similar_recipes.itertuples()):
+                similar_article_details = get_article_details_by_name(recipe.recipeName)
                 if similar_article_details and similar_article_details[0] not in seen_recipes:
                     seen_recipes.add(similar_article_details[0])
                     recommendations.append({
                         "articleNo": similar_article_details[0],
-                        "recipeName": recipe['recipeName'],
+                        "recipeName": recipe.recipeName,
                         "ingredients": similar_article_details[2],
                         "cookingMethod": similar_article_details[3],
                         "cuisineType": similar_article_details[4],
@@ -219,10 +165,12 @@ def get_recommended_recipes(topn, user_id):
                         "protein": similar_article_details[7],
                         "fat": similar_article_details[8],
                         "sodium": similar_article_details[9],
-                        "similarity": float(similarities[idx])
+                        "similarity": float(similarities[np.argsort(similarities)[-topn:][idx]])
                     })
+
     recommendations.sort(key=lambda x: x["similarity"], reverse=True)
     return recommendations[:20], None
+
 
 
 def get_recently_visited_recipes(user_id):
@@ -266,7 +214,7 @@ def get_article_details_by_name(recipeName):
 
 
 # 레시피 상세포인트 표시 엔드포인트
-@recommend2.route('/display_article/<int:articleNo>', methods=['GET'])
+@recommend3.route('/display_article/<int:articleNo>', methods=['GET'])
 def displayArticlePage(articleNo):
     user_id = session.get("user_id")
     # print("User ID:", user_id)
@@ -305,7 +253,7 @@ def save_user_visit(user_id, articleNo):
     conn.close()
 
 #로그인 기록 가져옴(사이드바)
-@recommend2.route('/api/article/recent_user_visits', methods=['GET'])
+@recommend3.route('/api/article/recent_user_visits', methods=['GET'])
 def getRecentUserVisits():
     user_id = session.get("user_id")
     if not user_id:
@@ -334,7 +282,8 @@ def getRecentUserVisits():
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
 
 #로그아웃
-@recommend2.route('/api/logout', methods=['POST'])
+@recommend3.route('/api/logout', methods=['POST'])
 def logout():
     session.clear()
     return make_response(jsonify({"success": True, "message": "Logged out successfully"}), 200)
+

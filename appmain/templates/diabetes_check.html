@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/title.css">
+    <title>CookRecipe</title>
+    <style>
+        .container { margin-top: 20px; }
+        .form-group { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row navbar bg-light align-items-center">
+            <div class="col-6">
+                <a class="nav-link" href="/home"><h4>CookRecipe</h4></a>
+            </div>
+            <div class="col-6">
+                <ul class="nav justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link" id="signup_link" href="/signup">회원가입</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signin_link" href="/signin">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signout_link" href="#">로그아웃</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="myinfo_link" href="/myinfo">마이페이지</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend1_link" href="/recommend1">추천 레시피1</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend2_link" href="/recommend2">추천 레시피2</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend3_link" href="/recommend3">추천 레시피3</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <br><h4>당뇨병 자가진단</h4></br>
+                <form id="diabetes_check_form">
+                    <div class="form-group">
+                        <input type="checkbox" id="thirsty" name="thirsty" value="thirsty">
+                        <label for="thirsty">목이 자주 마르고 침이 마른다.</label><br>
+                        <input type="checkbox" id="frequent_urination" name="frequent_urination" value="frequent_urination">
+                        <label for="frequent_urination">화장실 가는 횟수가 늘어났다.</label><br>
+                        <input type="checkbox" id="hunger" name="hunger" value="hunger">
+                        <label for="hunger">아무리 먹어도 공복감이 생기고 식욕이 생긴다.</label><br>
+                        <input type="checkbox" id="weight_loss_symptom" name="weight_loss_symptom" value="weight_loss_symptom">
+                        <label for="weight_loss_symptom">이유 없이 살이 빠지고 몸이 야위어 간다.</label><br>
+                        <input type="checkbox" id="fatigue_symptom" name="fatigue_symptom" value="fatigue_symptom">
+                        <label for="fatigue_symptom">항상 나른하고 매사가 귀찮다.</label><br>
+                        <input type="checkbox" id="skin_problems" name="skin_problems" value="skin_problems">
+                        <label for="skin_problems">피부에 부스럼이 잘 일어나고 습진, 무좀이 생긴다.</label><br>
+                        <input type="checkbox" id="numbness" name="numbness" value="numbness">
+                        <label for="numbness">손끝과 발끝의 감각이 둔하다.</label><br>
+                        <input type="checkbox" id="vision_problems" name="vision_problems" value="vision_problems">
+                        <label for="vision_problems">눈에 초점이 잘 안 잡히는 증상이 잦다.</label><br>
+                        <input type="checkbox" id="gum_problems" name="gum_problems" value="gum_problems">
+                        <label for="gum_problems">잇몸 염증이 자주 발생하고 피가 난다.</label><br>
+                        <input type="checkbox" id="family_history" name="family_history" value="family_history">
+                        <label for="family_history">부모님 중 당뇨 환자가 있다.</label><br>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="submitDiabetesCheck()">결과 확인</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="/static/js/navbar.js"></script>
+<script>
+function submitDiabetesCheck() {
+    const symptoms = [
+        document.getElementById('thirsty').checked,
+        document.getElementById('frequent_urination').checked,
+        document.getElementById('hunger').checked,
+        document.getElementById('weight_loss_symptom').checked,
+        document.getElementById('fatigue_symptom').checked,
+        document.getElementById('skin_problems').checked,
+        document.getElementById('numbness').checked,
+        document.getElementById('vision_problems').checked,
+        document.getElementById('gum_problems').checked,
+        document.getElementById('family_history').checked
+    ];
+
+    const diabetesSymptomsCount = symptoms.filter(Boolean).length;
+    if (diabetesSymptomsCount >= 6) {
+        localStorage.setItem('diabetes', 'true');
+    } else {
+        localStorage.setItem('diabetes', 'false');
+    }
+
+    window.location.href = '/health';
+}
+</script>
+</html>

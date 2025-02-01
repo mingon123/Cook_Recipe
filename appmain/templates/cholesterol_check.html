@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/title.css">
+    <title>CookRecipe</title>
+    <style>
+        .container { margin-top: 20px; }
+        .form-group { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row navbar bg-light align-items-center">
+            <div class="col-6">
+                <a class="nav-link" href="/home"><h4>CookRecipe</h4></a>
+            </div>
+            <div class="col-6">
+                <ul class="nav justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link" id="signup_link" href="/signup">회원가입</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signin_link" href="/signin">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="signout_link" href="#">로그아웃</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="myinfo_link" href="/myinfo">마이페이지</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend1_link" href="/recommend1">추천 레시피1</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend2_link" href="/recommend2">추천 레시피2</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend3_link" href="/recommend3">추천 레시피3</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <br><h4>고지혈증 자가진단</h4></br>
+                <form id="cholesterol_check_form">
+                    <div class="form-group">
+                        <input type="checkbox" id="leg_pain" name="leg_pain" value="leg_pain">
+                        <label for="leg_pain">조금 걸었는데 종아리가 아프다</label><br>
+                        <input type="checkbox" id="swollen_achilles" name="swollen_achilles" value="swollen_achilles">
+                        <label for="swollen_achilles">아킬레스건이 부었다.</label><br>
+                        <input type="checkbox" id="short_of_breath" name="short_of_breath" value="short_of_breath">
+                        <label for="short_of_breath">2층 계단을 오르내릴 때 숨이 친다</label><br>
+                        <input type="checkbox" id="dizziness" name="dizziness" value="dizziness">
+                        <label for="dizziness">가끔 어지럼증이 있다.</label><br>
+                        <input type="checkbox" id="irritability" name="irritability" value="irritability">
+                        <label for="irritability">이유 없이 짜증이 나고 초조하다</label><br>
+                        <input type="checkbox" id="middle_management" name="middle_management" value="middle_management">
+                        <label for="middle_management">직장에서 중간 관리직이다.</label><br>
+                        <input type="checkbox" id="work_overtime" name="work_overtime" value="work_overtime">
+                        <label for="work_overtime">야근을 많이 한다.</label><br>
+                        <input type="checkbox" id="indoor_job" name="indoor_job" value="indoor_job">
+                        <label for="indoor_job">실내에서 앉아서 일한다.</label><br>
+                        <input type="checkbox" id="stress" name="stress" value="stress">
+                        <label for="stress">평소 스트레스가 많은 편이다</label><br>
+                        <input type="checkbox" id="irregular_meals" name="irregular_meals" value="irregular_meals">
+                        <label for="irregular_meals">식사 시간이 불규칙한 편이다</label><br>
+                        <input type="checkbox" id="late_night_snacks" name="late_night_snacks" value="late_night_snacks">
+                        <label for="late_night_snacks">야식을 즐긴다</label><br>
+                        <input type="checkbox" id="sweets" name="sweets" value="sweets">
+                        <label for="sweets">초콜릿이나 케이크와 같은 단 것을 즐긴다</label><br>
+                        <input type="checkbox" id="snacks" name="snacks" value="snacks">
+                        <label for="snacks">간식을 자주 먹는다</label><br>
+                        <input type="checkbox" id="coffee" name="coffee" value="coffee">
+                        <label for="coffee">커피를 자주 마신다</label><br>
+                        <input type="checkbox" id="smoking" name="smoking" value="smoking">
+                        <label for="smoking">담배를 자주 피운다</label><br>
+                        <input type="checkbox" id="no_vegetables" name="no_vegetables" value="no_vegetables">
+                        <label for="no_vegetables">채소를 잘 안 먹는다</label><br>
+                        <input type="checkbox" id="picky_eater" name="picky_eater" value="picky_eater">
+                        <label for="picky_eater">편식이 심하다</label><br>
+                        <input type="checkbox" id="egg_dishes" name="egg_dishes" value="egg_dishes">
+                        <label for="egg_dishes">달걀 요리를 좋아한다.</label><br>
+                        <input type="checkbox" id="fatty_foods" name="fatty_foods" value="fatty_foods">
+                        <label for="fatty_foods">평소 기름진 음식을 즐겨 먹는다.</label><br>
+                        <input type="checkbox" id="overeating" name="overeating" value="overeating">
+                        <label for="overeating">배가 부를 때까지 먹는다.</label><br>
+                        <input type="checkbox" id="obesity" name="obesity" value="obesity">
+                        <label for="obesity">비만인 편이다</label><br>
+                        <input type="checkbox" id="constipation" name="constipation" value="constipation">
+                        <label for="constipation">변비가 있다.</label><br>
+                        <input type="checkbox" id="no_exercise" name="no_exercise" value="no_exercise">
+                        <label for="no_exercise">규칙적으로 하는 운동이 없다.</label><br>
+                        <input type="checkbox" id="insomnia" name="insomnia" value="insomnia">
+                        <label for="insomnia">잠이 안 오고 수면 부족이다.</label><br>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" onclick="submitCholesterolCheck()">결과 확인</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="/static/js/navbar.js"></script>
+<script>
+function submitCholesterolCheck() {
+    const symptoms = [
+        document.getElementById('leg_pain').checked,
+        document.getElementById('swollen_achilles').checked,
+        document.getElementById('short_of_breath').checked,
+        document.getElementById('dizziness').checked,
+        document.getElementById('irritability').checked,
+        document.getElementById('middle_management').checked,
+        document.getElementById('work_overtime').checked,
+        document.getElementById('indoor_job').checked,
+        document.getElementById('stress').checked,
+        document.getElementById('irregular_meals').checked,
+        document.getElementById('late_night_snacks').checked,
+        document.getElementById('sweets').checked,
+        document.getElementById('snacks').checked,
+        document.getElementById('coffee').checked,
+        document.getElementById('smoking').checked,
+        document.getElementById('no_vegetables').checked,
+        document.getElementById('picky_eater').checked,
+        document.getElementById('egg_dishes').checked,
+        document.getElementById('fatty_foods').checked,
+        document.getElementById('overeating').checked,
+        document.getElementById('obesity').checked,
+        document.getElementById('constipation').checked,
+        document.getElementById('no_exercise').checked,
+        document.getElementById('insomnia').checked
+    ];
+
+    const cholesterolSymptomsCount = symptoms.filter(Boolean).length;
+    if (cholesterolSymptomsCount >= 15) {
+        localStorage.setItem('cholesterol', 'true');
+    } else {
+        localStorage.setItem('cholesterol', 'false');
+    }
+
+    window.location.href = '/health';
+}
+</script>
+</html>

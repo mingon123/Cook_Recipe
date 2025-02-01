@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fetchRecentArticles() {
-        fetch('/api/recommend2', {
+        fetch('/api/recommend3', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
