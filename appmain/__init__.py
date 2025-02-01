@@ -21,3 +21,6 @@ app.register_blueprint(recommend)
 
 from appmain.recommend1.routes import recommend1
 app.register_blueprint(recommend1)
+
+from appmain.recommend2.routes import recommend2
+app.register_blueprint(recommend2)

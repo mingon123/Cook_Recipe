@@ -17,10 +17,12 @@ body {
 }
 
 .similar-recipes-container {
-    position: fixed;
+    position: -webkit-sticky;
+    position: sticky;
     top: 100px;
-    left: 0;
+    left: 20px;
     width: 300px;
+    bottom: 100px;
 }
 
 .similar-recipes {

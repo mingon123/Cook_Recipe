@@ -4,6 +4,7 @@ const signout = document.querySelector("#signout_link");
 const myinfo = document.querySelector("#myinfo_link");
 const recommendLink = document.querySelector("#recommend_link");
 const recommend1Link = document.querySelector("#recommend1_link");
+const recommend2Link = document.querySelector("#recommend2_link");
 //const createArticleLink = document.querySelector("#create_article_link");
 
 function showAndHideNavbarMenu() {
@@ -19,6 +20,7 @@ function showAndHideNavbarMenu() {
         myinfo.style.display = "none";
         recommendLink.style.display = "none";
         recommend1Link.style.display = "none";
+        recommend2Link.style.display = "none";
 
 //        createArticleLink.style.display = "none";
     }

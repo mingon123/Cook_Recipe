@@ -79,6 +79,7 @@ def evaluate_model(model, test_data):
         similarities.append(average_similarity)
     return np.mean(similarities) if similarities else 0
 
+
 # 검증 및 테스트 데이터 평가
 val_accuracy = evaluate_model(model, val_data)
 test_accuracy = evaluate_model(model, test_data)

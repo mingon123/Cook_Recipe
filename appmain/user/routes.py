@@ -93,7 +93,8 @@ def getAuth():
             payload = {"authenticated": True, "email": email, "username": username, "authtoken": token}
 
         else:
-            pass
+            payload["message"] = "로그인에 실패하였습니다. 아이디나 비밀번호를 확인하세요."
+
 
         cursor.close()
     conn.close()
@@ -166,6 +167,9 @@ def updateMyInfo():
                     SQL = 'UPDATE users SET username=%s WHERE email=%s'
                     cursor.execute(SQL, (username, email))
                 conn.commit()
+
+                payload["success"] = True
+                payload["message"] = "비밀번호가 성공적으로 변경되었습니다."
 
                 cursor.close()
             conn.close()

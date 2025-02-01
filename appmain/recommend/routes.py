@@ -33,7 +33,7 @@ def tokenize_text(text):
 
 @recommend.route('/recommend')
 def show_recommend():
-    limit = 10
+    limit = 20
     topn = 5
 
     user_id = session.get("user_id")
@@ -47,7 +47,7 @@ def show_recommend():
 
 @recommend.route('/api/recommend', methods=['GET'])
 def get_recommended_recipes():
-    limit = 10
+    limit = 20
     topn = 5
 
     user_id = session.get("user_id")
@@ -107,7 +107,7 @@ def get_recommended_recipes_data(limit, topn, user_id):
                         "similarity": recipe[1]
                     })
     recommended_recipes_data = sorted(recommended_recipes_data, key=lambda x: x["similarity"], reverse=True)
-    return recommended_recipes_data
+    return recommended_recipes_data[:20]
 
 #유사한 레시피 찾기
 def find_similar_recipes(articleNo, topn=5):

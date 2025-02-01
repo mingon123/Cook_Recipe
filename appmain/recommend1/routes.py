@@ -6,12 +6,12 @@ from appmain.recommend import manage_user_visits
 from datetime import datetime
 
 import pandas as pd
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-import numpy as np
 import faiss
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 
 recommend1 = Blueprint('recommend1', __name__)
 
@@ -32,7 +32,6 @@ df['ingredients'] = df['ingredients'].astype(str).fillna('')
 
 train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
-# SBERT 모델 로드
 sbert_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 # 임베딩 생성 함수
@@ -48,39 +47,138 @@ tfidf_vectorizer = TfidfVectorizer()
 tfidf_train_embeddings = tfidf_vectorizer.fit_transform(train_df['ingredients']).toarray()
 tfidf_test_embeddings = tfidf_vectorizer.transform(test_df['ingredients']).toarray()
 
-# SBERT와 TF-IDF 임베딩 결합
-train_embeddings = np.hstack((sbert_train_embeddings, tfidf_train_embeddings))
-test_embeddings = np.hstack((sbert_test_embeddings, tfidf_test_embeddings))
+# 가중치 적용 (SBERT에 더 높은 가중치를 부여)
+sbert_weight = 0.7
+tfidf_weight = 0.3
+
+# 가중치가 적용된 SBERT와 TF-IDF 임베딩 결합
+weighted_train_embeddings = np.hstack((sbert_weight * sbert_train_embeddings, tfidf_weight * tfidf_train_embeddings))
+weighted_test_embeddings = np.hstack((sbert_weight * sbert_test_embeddings, tfidf_weight * tfidf_test_embeddings))
 
 # 임베딩을 DataFrame에 추가
-train_df['embeddings'] = list(train_embeddings)
-test_df['embeddings'] = list(test_embeddings)
+train_df['embeddings'] = list(weighted_train_embeddings)
+test_df['embeddings'] = list(weighted_test_embeddings)
 
 
-# Faiss 인덱스 생성 및 학습
-embedding_size = train_embeddings.shape[1]
-index = faiss.IndexFlatL2(embedding_size)
-index.add(np.vstack(train_df['embeddings'].values))
+# # Faiss 인덱스 생성 및 학습
+# embedding_size = weighted_train_embeddings.shape[1]
+# index = faiss.IndexFlatL2(embedding_size)
+# index.add(np.vstack(train_df['embeddings'].values))
+#
+# # Faiss 유사도 계산 함수
+# def get_recommendations_faiss(target_embedding, df, index, top_n=5):
+#     target_embedding = np.expand_dims(target_embedding, axis=0)
+#     distances, indices = index.search(target_embedding, top_n + 1)
+#     recommended_indices = indices[0][1:]
+#     similarities = 1 / (1 + distances[0][1:])
+#     return df.iloc[recommended_indices], similarities
 
-# 유사도 계산 함수
-def get_recommendations_faiss(target_embedding, df, index, top_n=5):
-    distances, indices = index.search(target_embedding, top_n + 1)
-    recommended_indices = indices[0][1:]
-    similarities = 1 / (1 + distances[0][1:])
-    return df.iloc[recommended_indices], similarities
 
-# 유사도 계산 함수 (코사인 유사도 사용)
+
+
+#패키지 쓰지 않고 코사인 유사도 + 유클리드 거리 계산
+def cosine_similarity_manual(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm_vec1 = np.linalg.norm(vec1)
+    norm_vec2 = np.linalg.norm(vec2)
+    return dot_product / (norm_vec1 * norm_vec2)
+
+def euclidean_distance_manual(vec1, vec2):
+    return np.sqrt(np.sum((vec1 - vec2) ** 2))
+
+def combined_similarity(vec1, vec2, alpha=0.5):
+    cos_sim = cosine_similarity_manual(vec1, vec2)
+    euc_dist = euclidean_distance_manual(vec1, vec2)
+    euc_sim = 1 / (1 + euc_dist)
+    combined_sim = alpha * cos_sim + (1 - alpha) * euc_sim
+    return combined_sim
+
+def get_recommendations_combined(target_embedding, embeddings, df, top_n=5, alpha=0.5):
+    similarities = np.array([combined_similarity(target_embedding, embedding, alpha) for embedding in embeddings])
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    return df.iloc[top_indices], similarities[top_indices]
+
+
+
+
+# # 코사인 유사도
 # def get_recommendations_cosine(target_embedding, train_embeddings, train_df, top_n=5):
 #     similarities = cosine_similarity(target_embedding, train_embeddings)[0]
 #     top_indices = similarities.argsort()[-top_n-1:-1][::-1]
 #     return train_df.iloc[top_indices], similarities[top_indices]
+#
+# # 유클리드 거리
+# def get_recommendations_euclidean(target_embedding, embeddings, df, top_n=5):
+#     distances = euclidean_distances(target_embedding, embeddings)[0]
+#     top_indices = distances.argsort()[:top_n]
+#     return df.iloc[top_indices], distances[top_indices]
+
+
+
+
+# 코사인유사도 + 유클리드 거리 계산
+def hybrid_similarity(vec1, vec2, alpha=0.5):
+    cos_sim = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+    euc_dist = np.linalg.norm(vec1 - vec2)
+    return alpha * cos_sim + (1 - alpha) * (1 / (1 + euc_dist))
+
+def get_recommendations_hybrid(target_embedding, df, embeddings, top_n=5):
+    similarities = np.array([hybrid_similarity(target_embedding, emb) for emb in embeddings])
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    return df.iloc[top_indices], similarities[top_indices]
+
+
+
+#
+# # 유사도 계산 및 평균 유사도 계산 함수
+# def calculate_average_similarity(method, target_embedding, df, embeddings, index=None):
+#     if method == 'faiss':
+#         _, similarities = get_recommendations_faiss(target_embedding, df, index)
+#     elif method == 'combined':
+#         _, similarities = get_recommendations_combined(target_embedding, embeddings, df)
+#     elif method == 'hybrid':
+#         _, similarities = get_recommendations_hybrid(target_embedding, df, embeddings)
+#     return np.mean(similarities)
+#
+# # 검증 셋과 테스트 셋의 각 레시피에 대해 평균 유사도 계산
+# methods = ['faiss', 'combined', 'hybrid']
+# average_similarities_val = {method: [] for method in methods}
+# average_similarities_test = {method: [] for method in methods}
+#
+# # 검증 셋에 대한 평균 유사도 계산
+# for i in range(len(train_df)):
+#     target_embedding = train_df['embeddings'].iloc[i]
+#     for method in methods:
+#         avg_sim = calculate_average_similarity(method, target_embedding, train_df, np.vstack(train_df['embeddings'].values), index)
+#         average_similarities_val[method].append(avg_sim)
+#
+# # 테스트 셋에 대한 평균 유사도 계산
+# for i in range(len(test_df)):
+#     target_embedding = test_df['embeddings'].iloc[i]
+#     for method in methods:
+#         avg_sim = calculate_average_similarity(method, target_embedding, train_df, np.vstack(train_df['embeddings'].values), index)
+#         average_similarities_test[method].append(avg_sim)
+#
+# # # 각 방법의 전체 평균 유사도 출력
+# # print("검증 데이터에 대한 평균 유사도 평가:")
+# # for method in methods:
+# #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_val[method]))
+# #
+# # print("테스트 데이터에 대한 평균 유사도 평가:")
+# # for method in methods:
+# #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_test[method]))
+#
+#
+
+
+
 
 
 
 
 @recommend1.route('/recommend1')
 def show_recommend():
-    topn = 5
+    topn = 20
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"success": False, "message": "로그인 되어 있지 않습니다"}), 404
@@ -93,7 +191,7 @@ def show_recommend():
 
 @recommend1.route('/api/recommend1', methods=['GET'])
 def api_get_recommended_recipes():
-    topn = 5
+    topn = 20
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"success": False, "message": "사용자 ID를 찾을 수 없습니다."}), 404
@@ -115,9 +213,10 @@ def get_recommended_recipes(topn, user_id):
     for articleNo in recently_visited:
         article_details = get_article_details(articleNo)
         if article_details and article_details[1] in test_df['recipeName'].values:
-            target_embedding = np.array([test_df.loc[test_df['recipeName'] == article_details[1], 'embeddings'].values[0]])
-            similar_recipes, similarities = get_recommendations_faiss(target_embedding, train_df, index, topn)
-            # similar_recipes, similarities = get_recommendations_cosine(target_embedding, np.vstack(train_df['embeddings'].values), train_df, topn)
+            target_embedding = test_df.loc[test_df['recipeName'] == article_details[1], 'embeddings'].values[0]
+            # similar_recipes, similarities = get_recommendations_faiss(target_embedding, train_df, index, topn)
+            # similar_recipes, similarities = get_recommendations_combined(target_embedding, np.vstack(train_df['embeddings'].values), train_df, topn)
+            similar_recipes, similarities = get_recommendations_hybrid(target_embedding, train_df, np.vstack(train_df['embeddings'].values), topn)
             for idx, (_, recipe) in enumerate(similar_recipes.iterrows()):
                 similar_article_details = get_article_details_by_name(recipe['recipeName'])
                 if similar_article_details and similar_article_details[0] not in seen_recipes:
@@ -136,7 +235,7 @@ def get_recommended_recipes(topn, user_id):
                         "similarity": float(similarities[idx])
                     })
     recommendations.sort(key=lambda x: x["similarity"], reverse=True)
-    return recommendations, None
+    return recommendations[:20], None
 
 
 def get_recently_visited_recipes(user_id):
@@ -229,11 +328,11 @@ def getRecentUserVisits():
     cursor = conn.cursor()
 
     SQL = '''
-    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지 
-    FROM user_visits rv 
-    JOIN recipes_data1 rd ON rv.articleNo = rd.번호 
-    WHERE rv.user_id = %s 
-    ORDER BY rv.visit_date DESC 
+    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지
+    FROM user_visits rv
+    JOIN recipes_data1 rd ON rv.articleNo = rd.번호
+    WHERE rv.user_id = %s
+    ORDER BY rv.visit_date DESC
     LIMIT 5
     '''
     cursor.execute(SQL, (user_id,))
@@ -252,3 +351,4 @@ def getRecentUserVisits():
 def logout():
     session.clear()
     return make_response(jsonify({"success": True, "message": "Logged out successfully"}), 200)
+

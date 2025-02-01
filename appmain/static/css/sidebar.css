@@ -21,6 +21,7 @@ body {
     top: 100px;
     right: 0;
     width: 300px;
+    bottom: 100px;
 }
 
 .sidebar {
@@ -82,5 +83,3 @@ body {
 .recent-item-link:hover .recent-item {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
-
-

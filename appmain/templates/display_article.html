@@ -42,6 +42,9 @@
                     <li class="nav-item">
                         <a class="nav-link" id="recommend1_link" href="/recommend1">추천 레시피1</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend2_link" href="/recommend2">추천 레시피2</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -68,10 +71,12 @@
         <div class="row article-content justify-content-center" id="tips_div"></div>
         <div class="row article-content justify-content-center" id="cooking_sequence_div"></div>
         <div class="row">
-            <div class="similar-recipes-container">
-                <div class="similar-recipes">
-                    <h5>유사한 레시피</h5>
-                    <div id="similar_viewed"></div>
+            <div class="col-lg-8">
+                <div class="similar-recipes-container">
+                    <div class="similar-recipes">
+                        <h5>유사한 레시피</h5>
+                        <div id="similar_viewed"></div>
+                    </div>
                 </div>
             </div>
             <div class="col-lg-4 sidebar-container">
@@ -108,8 +113,7 @@
                 </div>
             </div>
         </div>
-        <div class="row justify-content-center" id="display_reply_div">
-        </div>
+        <div class="row justify-content-center" id="display_reply_div"></div>
     </div>
     <div class="container mt-5 mb-5">
         <div class="row justify-content-center">
@@ -125,4 +129,6 @@
 <script type="text/javascript" src="/static/js/signout.js"></script>
 <script type="text/javascript" src="/static/js/reply.js"></script>
 <script type="text/javascript" src="/static/js/display_article.js"></script>
+<script type="text/javascript" src="/static/js/scroll.js"></script>
+<script type="text/javascript" src="/static/js/scroll_similar_sidebar.js"></script>
 </html>
