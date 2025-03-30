@@ -1,0 +1,12 @@
+.img-fluid {
+    width: 100%;
+    height: auto;
+}
+.card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.card-header h5 {
+    margin: 0;
+}

@@ -1,0 +1,9 @@
+.page-button {
+    color: gray; /* 글자 회색 */
+    font-size: 0.9rem; /* 글자 크기 줄이기 */
+    margin: 0 1px; /* 버튼 간격 줄이기 */
+}
+.page-button.active {
+    font-weight: bold;
+    color: black; /* 현재 페이지는 검은색 */
+}

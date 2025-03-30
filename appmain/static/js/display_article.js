@@ -153,6 +153,6 @@ function fetchSimilarRecipes() {
 }
 
 window.addEventListener('load', () => {
-    getArticle();s
+    getArticle();
     fetchSimilarRecipes();
 });

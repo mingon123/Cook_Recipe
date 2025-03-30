@@ -7,6 +7,7 @@ from appmain.utils import verifyJWT, getJWTContent
 from appmain.recommend1 import manage_user_visits
 from datetime import datetime
 from appmain.recommend1.routes import find_similar_recipes, get_article_details
+import pandas as pd
 
 article = Blueprint('article', __name__)
 
@@ -18,6 +19,14 @@ def get_db_connection():
         database="recipes",
         auth_plugin='mysql_native_password'
     )
+
+file_path = os.path.join(os.path.dirname(__file__), 'processed_recipes.csv')
+df = pd.read_csv(file_path, sep='\t', encoding='cp949')
+def get_processed_ingredients(articleNo):
+    recipe = df.loc[df['번호'] == articleNo]
+    if not recipe.empty:
+        return recipe.iloc[0]['ingredients']
+    return None
 
 #첫페이지 레시피
 @article.route('/api/article/recent', methods=['GET'])
@@ -52,13 +61,13 @@ def displayArticlePage(articleNo):
         try:
             save_user_visit(str(user_id), articleNo)
             similar_recipes = find_similar_recipes(articleNo, topn=5)
-            similar_recipes_info = [{"articleNo": recipe[0], "recipeName": get_article_details(recipe[0])[0], "image": get_article_details(recipe[0])[2]} for recipe in similar_recipes]
+            similar_recipes_info = [{"articleNo": recipe[0], "recipeName": get_article_details(recipe[0])[0],
+                                     "image": get_article_details(recipe[0])[10]} for recipe in similar_recipes]
             return render_template('display_article.html', user_id=user_id, similar_recipes=similar_recipes_info)
         except Exception as e:
             print(f"Error saving user visit: {e}")
 
-    return send_from_directory(app.root_path, 'templates/display_article.html')
-
+        return send_from_directory(app.root_path, 'templates/display_article.html')
 #레시피 조회 기록 저장
 def save_user_visit(user_id, articleNo):
     conn = get_db_connection()
@@ -160,6 +169,7 @@ def displayArticle():
 def searchArticles():
     data = request.form
     searchKeyword = data.get("searchKeyword")
+    recipeName = data.get("recipeName") if data.get("recipeName") else ""
     excludedIngredients = data.get("excludedIngredients")
     noDairy = data.get("noDairy")
     vegetarian = data.get("vegetarian")
@@ -167,7 +177,18 @@ def searchArticles():
     nut = data.get("nut")
     cuisineType = data.get("cuisineType")
 
-    # 페이지네이션을 위한 쿼리 매개변수
+    print("검색 조건:", {
+        "searchKeyword": searchKeyword,
+        "recipeName": recipeName,
+        "excludedIngredients": excludedIngredients,
+        "noDairy": noDairy,
+        "vegetarian": vegetarian,
+        "vegan": vegan,
+        "nut": nut,
+        "cuisineType": cuisineType
+    })  # 검색 조건 로그 출력
+
+
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     offset = (page - 1) * limit
@@ -195,11 +216,11 @@ def searchArticles():
     user_health = cursor.fetchone()
 
     if cursor:
-        SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 1=1'
+        SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 완성이미지 FROM recipes_data1 WHERE 1=1'
 
         condition_statements = []
 
-        if cuisineType:
+        if cuisineType and cuisineType != '모든 종류':
             condition_statements.append(f"요리종류 = '{cuisineType}'")
 
         if user_health:
@@ -234,6 +255,8 @@ def searchArticles():
         if condition_statements:
             SQL += ' AND ' + ' AND '.join(condition_statements)
 
+        if recipeName:
+            SQL += ' AND 메뉴명 LIKE "%{}%"'.format(recipeName.strip())
 
         if searchKeyword:
             search_conditions = []
@@ -276,7 +299,7 @@ def searchArticles():
                 SQL += f' AND 재료 NOT LIKE "%{allergy.strip()}%"'
 
         SQL += ' ' + order_clause
-        # SQL += 'ORDER BY 번호 DESC'
+        print("SQL 쿼리:", SQL)
 
         SQL_count = 'SELECT COUNT(*) FROM (' + SQL + ') AS count_query'
         cursor.execute(SQL_count)
@@ -293,13 +316,29 @@ def searchArticles():
 
     if len(result) > 0:
         for article in result:
-            searchResults.append({"articleNo": article[0], "recipeName": article[1], "ingredients": article[2], \
-                                  "cookingMethod": article[3], "cuisineType": article[4], "calories": article[5], \
-                                  "carbohydrates": article[6], "protein": article[7], "fat": article[8], "sodium": article[9]})
+            processed_ingredients = get_processed_ingredients(article[0])
+            if processed_ingredients is None:
+                processed_ingredients = article[2]
+
+            searchResults.append({
+                "articleNo": article[0],
+                "recipeName": article[1],
+                "ingredients": processed_ingredients,
+                "cookingMethod": article[3],
+                "cuisineType": article[4],
+                "calories": article[5],
+                "carbohydrates": article[6],
+                "protein": article[7],
+                "fat": article[8],
+                "sodium": article[9],
+                "image": article[10]
+            })
 
         payload = {"success": True, "articles": searchResults, "totalArticles": total_articles}
 
     return make_response(jsonify(payload), 200)
+
+
 
 @article.route('/api/article/recent_user_visits', methods=['GET'])
 def getRecentUserVisits():
