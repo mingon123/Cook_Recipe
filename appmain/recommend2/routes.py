@@ -199,26 +199,27 @@ def get_recommended_recipes(topn, user_id):
 
     for articleNo in recently_visited:
         article_details = get_article_details(articleNo)
-        if article_details and article_details[1] in test_df['recipeName'].values:
-            target_embedding = test_df.loc[test_df['recipeName'] == article_details[1], 'embeddings'].values[0]
+        if article_details and article_details['메뉴명'] in test_df['recipeName'].values:
+            target_embedding = test_df.loc[test_df['recipeName'] == article_details['메뉴명'], 'embeddings'].values[0]
             # similar_recipes, similarities = get_recommendations_faiss(target_embedding, train_df, index, topn)
             # similar_recipes, similarities = get_recommendations_combined(target_embedding, np.vstack(train_df['embeddings'].values), train_df, topn)
             similar_recipes, similarities = get_recommendations_hybrid(target_embedding, train_df, np.vstack(train_df['embeddings'].values), topn)
             for idx, (_, recipe) in enumerate(similar_recipes.iterrows()):
                 similar_article_details = get_article_details_by_name(recipe['recipeName'])
-                if similar_article_details and similar_article_details[0] not in seen_recipes:
-                    seen_recipes.add(similar_article_details[0])
+                if similar_article_details and similar_article_details['번호'] not in seen_recipes:
+                    seen_recipes.add(similar_article_details['번호'])
                     recommendations.append({
-                        "articleNo": similar_article_details[0],
+                        "articleNo": similar_article_details['번호'],
                         "recipeName": recipe['recipeName'],
-                        "ingredients": similar_article_details[2],
-                        "cookingMethod": similar_article_details[3],
-                        "cuisineType": similar_article_details[4],
-                        "calories": similar_article_details[5],
-                        "carbohydrates": similar_article_details[6],
-                        "protein": similar_article_details[7],
-                        "fat": similar_article_details[8],
-                        "sodium": similar_article_details[9],
+                        "ingredients": recipe['ingredients'],
+                        "cookingMethod": similar_article_details['조리방법'],
+                        "cuisineType": similar_article_details['요리종류'],
+                        "calories": similar_article_details['열량'],
+                        "carbohydrates": similar_article_details['탄수화물'],
+                        "protein": similar_article_details['단백질'],
+                        "fat": similar_article_details['지방'],
+                        "sodium": similar_article_details['나트륨'],
+                        "image": similar_article_details['이미지'],
                         "similarity": float(similarities[idx])
                     })
     recommendations.sort(key=lambda x: x["similarity"], reverse=True)
@@ -242,27 +243,55 @@ def get_article_details(articleNo):
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
 
-    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 번호 = %s'
+    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 이미지6, 이미지5, 이미지4, 이미지3, 이미지2, 이미지1 FROM recipes_data1 WHERE 번호 = %s'
     cursor.execute(SQL, (articleNo,))
     result = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
-    return result
+    if result:
+        return {
+            '번호': result[0],
+            '메뉴명': result[1],
+            '재료': result[2],
+            '조리방법': result[3],
+            '요리종류': result[4],
+            '열량': result[5],
+            '탄수화물': result[6],
+            '단백질': result[7],
+            '지방': result[8],
+            '나트륨': result[9],
+            '이미지': result[10] or result[11] or result[12] or result[13] or result[14] or result[15]
+        }
+    return None
 
 def get_article_details_by_name(recipeName):
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
 
-    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 메뉴명 = %s'
+    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 이미지6, 이미지5, 이미지4, 이미지3, 이미지2, 이미지1 FROM recipes_data1 WHERE 메뉴명 = %s'
     cursor.execute(SQL, (recipeName,))
     result = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
-    return result
+    if result:
+        return {
+            '번호': result[0],
+            '메뉴명': result[1],
+            '재료': result[2],
+            '조리방법': result[3],
+            '요리종류': result[4],
+            '열량': result[5],
+            '탄수화물': result[6],
+            '단백질': result[7],
+            '지방': result[8],
+            '나트륨': result[9],
+            '이미지': result[10] or result[11] or result[12] or result[13] or result[14] or result[15]
+        }
+    return None
 
 
 # 레시피 상세포인트 표시 엔드포인트
@@ -315,11 +344,11 @@ def getRecentUserVisits():
     cursor = conn.cursor()
 
     SQL = '''
-    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지
-    FROM user_visits rv
-    JOIN recipes_data1 rd ON rv.articleNo = rd.번호
-    WHERE rv.user_id = %s
-    ORDER BY rv.visit_date DESC
+    SELECT rv.articleNo, rd.메뉴명, rd.이미지6, rd.이미지5, rd.이미지4, rd.이미지3, rd.이미지2, rd.이미지1 
+    FROM user_visits rv 
+    JOIN recipes_data1 rd ON rv.articleNo = rd.번호 
+    WHERE rv.user_id = %s 
+    ORDER BY rv.visit_date DESC 
     LIMIT 5
     '''
     cursor.execute(SQL, (user_id,))
@@ -328,8 +357,10 @@ def getRecentUserVisits():
     cursor.close()
     conn.close()
 
-    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "image": article[2]}
-                         for article in result]
+    recentArticleDics = []
+    for article in result:
+        image = article[2] or article[3] or article[4] or article[5] or article[6] or article[7]
+        recentArticleDics.append({"articleNo": article[0], "recipeName": article[1], "image": image})
 
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
 

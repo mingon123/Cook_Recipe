@@ -23,7 +23,7 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 # SQL 쿼리 실행
-cursor.execute("SELECT 메뉴명, 재료, 조리방법, 요리종류 FROM recipes_data1")
+cursor.execute("SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류 FROM recipes_data1")
 
 # 데이터 모두 가져오기
 rows = cursor.fetchall()
@@ -80,19 +80,19 @@ def preprocess_text(text):
 
 # 전처리 적용
 processed_data = []
-for recipeName, ingredients, cookingMethod, cuisineType in rows:
+for recipeNo, recipeName, ingredients, cookingMethod, cuisineType in rows:
     processed_recipeName = preprocess_text(recipeName)
     processed_ingredients = preprocess_text(ingredients)
     # processed_cookingMethod = preprocess_text(cookingMethod)
     # processed_cuisineType = preprocess_text(cuisineType)
-    processed_data.append((processed_recipeName, processed_ingredients))
+    processed_data.append((recipeNo, processed_recipeName, processed_ingredients))
 
 # 전처리된 데이터 출력
 for data in processed_data:
     print(data)
 
 # 전처리된 데이터를 데이터프레임으로 변환
-df = pd.DataFrame(processed_data, columns=['recipeName', 'ingredients'])
+df = pd.DataFrame(processed_data, columns=['번호', 'recipeName', 'ingredients'])
 
 # CSV 파일로 저장
 df.to_csv('processed_recipes.csv', sep='\t', encoding='cp949', index=False)

@@ -12,15 +12,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardDiv.className = 'card mt-2';
 
                 const articleElement = `
-                    <h5 class="card-header" style="background-color: #c0c0c0;">
-                        <a class="link-primary text-decoration-none" href="/display_article/${article.articleNo}">
-                            ${article.recipeName}
-                        </a>
-                    </h5>
-                    <div class="card-body">
-                        <p class="card-text">재료: ${article.ingredients}</p><br>
-                        <p class="card-text">조리 방법: ${article.cookingMethod} &nbsp;&nbsp; 요리 종류: ${article.cuisineType}</p>
-                        <p class="card-text"><strong>영양(1회 제공량당)</strong><br> 열량: ${article.calories}kcal, 탄수화물: ${article.carbohydrates}g, 단백질: ${article.protein}g, 지방: ${article.fat}g, 나트륨: ${article.sodium}mg</p>
+                    <div class="card-header" style="background-color: #c0c0c0;">
+                        <h5 class="card-title">
+                            <a class="link-primary text-decoration-none" href="/display_article/${article.articleNo}">
+                                ${article.recipeName}
+                            </a>
+                        </h5>
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            ${article.image ? `<img src="${article.image}" alt="레시피 이미지" class="img-fluid rounded-start">` : ''}
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <p class="card-text">재료: ${article.ingredients.split(' ').join(', ')}</p>
+                            </div>
+                        </div>
                     </div>
                 `;
 
@@ -33,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
             container.appendChild(errorMessage);
         }
     }
+
 
     function fetchRecentArticles() {
         fetch('/api/recommend1', {

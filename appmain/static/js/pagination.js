@@ -18,7 +18,7 @@ function updatePaginationControls(totalArticles) {
     // 이전 버튼
     if (currentGroup > 1) {
         const prevButton = document.createElement('button');
-        prevButton.className = 'page-button btn btn-light'; // 버튼 간격 조정을 위해 margin을 추가하지 않음
+        prevButton.className = 'page-button btn btn-light';
         prevButton.textContent = '이전';
         prevButton.onclick = () => {
             currentPage = (currentGroup - 2) * pagesPerGroup + 1;
@@ -31,7 +31,7 @@ function updatePaginationControls(totalArticles) {
     // 페이지 번호 버튼
     for (let i = startPage; i <= endPage; i++) {
         const pageButton = document.createElement('button');
-        pageButton.className = 'page-button btn btn-light'; // 버튼 간격 조정을 위해 margin을 추가하지 않음
+        pageButton.className = 'page-button btn btn-light';
         pageButton.textContent = i;
         if (i === currentPage) {
             pageButton.classList.add('active');
@@ -39,7 +39,7 @@ function updatePaginationControls(totalArticles) {
         pageButton.onclick = () => {
             currentPage = i;
             searchArticle();
-            window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+            window.scrollTo(0, 0);
         };
         paginationControls.appendChild(pageButton);
     }
@@ -47,12 +47,12 @@ function updatePaginationControls(totalArticles) {
     // 다음 버튼
     if (currentGroup < Math.ceil(totalPages / pagesPerGroup)) {
         const nextButton = document.createElement('button');
-        nextButton.className = 'page-button btn btn-light'; // 버튼 간격 조정을 위해 margin을 추가하지 않음
+        nextButton.className = 'page-button btn btn-light';
         nextButton.textContent = '다음';
         nextButton.onclick = () => {
             currentPage = currentGroup * pagesPerGroup + 1;
             searchArticle();
-            window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+            window.scrollTo(0, 0);
         };
         paginationControls.appendChild(nextButton);
     }
@@ -95,6 +95,7 @@ function searchArticle() {
     let vegan = veganCheckbox.checked ? true : false;
     let nut = nutCheckbox.checked ? true : false;
     let cuisineType = document.getElementById('cuisine_type').value;
+    let recipeName = recipeNameInput ? recipeNameInput.value.trim() : '';
 
     ingredients = ingredients.trim() !== '' ? ingredients : '';
     excludedIngredients = excludedIngredients.trim() !== '' ? excludedIngredients : '';
@@ -107,6 +108,7 @@ function searchArticle() {
     formData.set("vegan", vegan);
     formData.set("nut", nut);
     formData.set("cuisineType", cuisineType);
+    formData.set("recipeName", recipeName);
 
     fetch(`/api/article/search?page=${currentPage}&limit=${articlesPerPage}`, {
         method: 'POST',
@@ -127,7 +129,7 @@ function searchArticle() {
 
         if (resBody["success"] === true) {
             displaySearchResults(resBody["articles"]);
-            updatePaginationControls(resBody["totalArticles"]); // 페이지네이션 업데이트
+            updatePaginationControls(resBody["totalArticles"]);
         } else {
             let cardDiv = document.createElement('div');
             cardDiv.className = 'card mt-2 text-center';
@@ -144,27 +146,27 @@ function searchArticle() {
 }
 
 searchButton.addEventListener('click', () => {
-    currentPage = 1; // 검색 버튼 클릭 시 페이지 번호를 초기화
+    currentPage = 1;
     searchArticle();
-    window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+    window.scrollTo(0, 0);
 });
 noDairyCheckbox.addEventListener('change', () => {
     currentPage = 1;
     searchArticle();
-    window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+    window.scrollTo(0, 0);
 });
 vegetarianCheckbox.addEventListener('change', () => {
     currentPage = 1;
     searchArticle();
-    window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+    window.scrollTo(0, 0);
 });
 veganCheckbox.addEventListener('change', () => {
     currentPage = 1;
     searchArticle();
-    window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+    window.scrollTo(0, 0);
 });
 nutCheckbox.addEventListener('change', () => {
     currentPage = 1;
     searchArticle();
-    window.scrollTo(0, 0); // 페이지 맨 위로 즉시 이동
+    window.scrollTo(0, 0);
 });

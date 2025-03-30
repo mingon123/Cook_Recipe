@@ -1,6 +1,8 @@
 .img-fluid {
     width: 100%;
     height: auto;
+    object-fit: cover;
+    max-height: 200px;
 }
 .card-body {
     display: flex;

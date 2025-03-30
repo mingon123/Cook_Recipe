@@ -35,7 +35,7 @@ tfidf_scores = dict(zip(feature_names, tfidf_matrix.toarray().sum(axis=0)))
 # 가중치를 적용한 데이터 준비
 weighted_sentences = []
 recipe_name_weight = 1
-ingredient_weight = 1
+ingredient_weight = 2
 
 for name, ingredients in zip(df['processed_recipeName'], df['processed_ingredients']):
     weighted_name = [(word, tfidf_scores.get(word, 0) * recipe_name_weight) for word in name]

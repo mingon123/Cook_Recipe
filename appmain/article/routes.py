@@ -34,20 +34,28 @@ def getRecentArticles():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 완성이미지 \
+    SQL = 'SELECT 번호, 메뉴명, 재료, 이미지6, 이미지5, 이미지4, 이미지3, 이미지2, 이미지1, 완성이미지\
            FROM recipes_data1 ORDER BY 번호 DESC LIMIT 6'
 
     cursor.execute(SQL)
-
     result = cursor.fetchall()
-
     cursor.close()
+    conn.close()
 
-    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "ingredients": article[2],
-                          "cookingMethod": article[3], "cuisineType": article[4], "calories": article[5],
-                          "carbohydrates": article[6], "protein": article[7], "fat": article[8], "sodium": article[9],
-                          "image": article[10]}
-                         for article in result]
+    recentArticleDics = []
+    for article in result:
+        processed_ingredients = get_processed_ingredients(article[0])
+        if processed_ingredients is None:
+            processed_ingredients = article[2]
+
+        image = article[3] or article[4] or article[5] or article[6] or article[7] or article[8] or article[9]
+
+        recentArticleDics.append({
+            "articleNo": article[0],
+            "recipeName": article[1],
+            "ingredients": processed_ingredients,
+            "image": image
+        })
 
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
 
@@ -60,14 +68,23 @@ def displayArticlePage(articleNo):
     if user_id:
         try:
             save_user_visit(str(user_id), articleNo)
-            similar_recipes = find_similar_recipes(articleNo, topn=5)
-            similar_recipes_info = [{"articleNo": recipe[0], "recipeName": get_article_details(recipe[0])[0],
-                                     "image": get_article_details(recipe[0])[10]} for recipe in similar_recipes]
-            return render_template('display_article.html', user_id=user_id, similar_recipes=similar_recipes_info)
         except Exception as e:
             print(f"Error saving user visit: {e}")
 
-        return send_from_directory(app.root_path, 'templates/display_article.html')
+    similar_recipes = find_similar_recipes(articleNo, topn=5)
+    similar_recipes_info = []
+
+    for recipe in similar_recipes:
+        details = get_article_details(recipe[0])
+        if details:
+            similar_recipes_info.append({
+                "articleNo": recipe[0],
+                "recipeName": details[1] if len(details) > 1 else "N/A",
+                "image": details[10] if len(details) > 10 else None
+            })
+
+    return render_template('display_article.html', user_id=user_id, similar_recipes=similar_recipes_info)
+
 #레시피 조회 기록 저장
 def save_user_visit(user_id, articleNo):
     conn = get_db_connection()
@@ -169,6 +186,7 @@ def displayArticle():
 def searchArticles():
     data = request.form
     searchKeyword = data.get("searchKeyword")
+    recipeName = data.get("recipeName") if data.get("recipeName") else ""
     excludedIngredients = data.get("excludedIngredients")
     noDairy = data.get("noDairy")
     vegetarian = data.get("vegetarian")
@@ -203,11 +221,13 @@ def searchArticles():
     user_health = cursor.fetchone()
 
     if cursor:
-        SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 완성이미지 FROM recipes_data1 WHERE 1=1'
+        SQL = '''
+        SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 
+               완성이미지, 이미지1, 이미지2, 이미지3, 이미지4, 이미지5, 이미지6 FROM recipes_data1 WHERE 1=1'''
 
         condition_statements = []
 
-        if cuisineType:
+        if cuisineType and cuisineType != '모든 종류':
             condition_statements.append(f"요리종류 = '{cuisineType}'")
 
         if user_health:
@@ -242,6 +262,8 @@ def searchArticles():
         if condition_statements:
             SQL += ' AND ' + ' AND '.join(condition_statements)
 
+        if recipeName:
+            SQL += ' AND 메뉴명 LIKE "%{}%"'.format(recipeName.strip())
 
         if searchKeyword:
             search_conditions = []
@@ -284,7 +306,6 @@ def searchArticles():
                 SQL += f' AND 재료 NOT LIKE "%{allergy.strip()}%"'
 
         SQL += ' ' + order_clause
-        # SQL += 'ORDER BY 번호 DESC'
 
         SQL_count = 'SELECT COUNT(*) FROM (' + SQL + ') AS count_query'
         cursor.execute(SQL_count)
@@ -316,12 +337,20 @@ def searchArticles():
                 "protein": article[7],
                 "fat": article[8],
                 "sodium": article[9],
-                "image": article[10]
+                "image": article[10],
+                "image1": article[11],
+                "image2": article[12],
+                "image3": article[13],
+                "image4": article[14],
+                "image5": article[15],
+                "image6": article[16]
             })
 
         payload = {"success": True, "articles": searchResults, "totalArticles": total_articles}
 
     return make_response(jsonify(payload), 200)
+
+
 
 @article.route('/api/article/recent_user_visits', methods=['GET'])
 def getRecentUserVisits():
@@ -333,7 +362,7 @@ def getRecentUserVisits():
     cursor = conn.cursor()
 
     SQL = '''
-    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지 
+    SELECT rv.articleNo, rd.메뉴명, rd.이미지6, rd.이미지5, rd.이미지4, rd.이미지3, rd.이미지2, rd.이미지1
     FROM user_visits rv 
     JOIN recipes_data1 rd ON rv.articleNo = rd.번호 
     WHERE rv.user_id = %s 
@@ -346,8 +375,14 @@ def getRecentUserVisits():
     cursor.close()
     conn.close()
 
-    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "image": article[2]}
-                         for article in result]
+    recentArticleDics = []
+    for article in result:
+        image = article[2] or article[3] or article[4] or article[5] or article[6] or article[7]
+        recentArticleDics.append({
+            "articleNo": article[0],
+            "recipeName": article[1],
+            "image": image
+        })
 
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
 

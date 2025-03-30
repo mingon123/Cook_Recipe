@@ -25,7 +25,7 @@ body {
 }
 
 .sidebar {
-    width: 48%; /* 박스 크기 */
+    width: 54%; /* 박스 크기 */
     padding: 8px;
     background: #ffffff;
     padding-bottom: 1px;
@@ -35,7 +35,7 @@ body {
 
 .sidebar h5 {
     margin-bottom: 10px;
-    font-size: 15px; /* 제목 크기 */
+    font-size: 17px; /* 제목 크기 */
 }
 
 .posts {

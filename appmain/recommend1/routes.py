@@ -9,6 +9,7 @@ from gensim.models import Word2Vec
 from nltk.tokenize import word_tokenize
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
 
 recommend1 = Blueprint('recommend1', __name__)
 
@@ -27,6 +28,14 @@ def get_db_connection():
         auth_plugin='mysql_native_password'
     )
 
+file_path = os.path.join(os.path.dirname(__file__), 'processed_recipes.csv')
+df = pd.read_csv(file_path, sep='\t', encoding='cp949')
+
+def get_processed_ingredients(articleNo):
+    recipe = df.loc[df['번호'] == articleNo]
+    if not recipe.empty:
+        return recipe.iloc[0]['ingredients']
+    return None
 
 def tokenize_text(text):
     if not isinstance(text, str):
@@ -98,10 +107,15 @@ def get_recommended_recipes_data(limit, topn, user_id):
                 if not is_duplicate:
                     article_details = get_article_details(recipe[0])
                     nutrition_info = get_nutrition_info(recipe[0])
+
+                    processed_ingredients = get_processed_ingredients(article_details[0])
+                    if processed_ingredients is None:
+                        processed_ingredients = article_details[1]
+
                     recommended_recipes_data.append({
                         "articleNo": recipe[0],
                         "recipeName": article_details[0],
-                        "ingredients": article_details[1],
+                        "ingredients": processed_ingredients,
                         "cookingMethod": nutrition_info[0],
                         "cuisineType": nutrition_info[1],
                         "calories": nutrition_info[2],
@@ -109,6 +123,7 @@ def get_recommended_recipes_data(limit, topn, user_id):
                         "protein": nutrition_info[4],
                         "fat": nutrition_info[5],
                         "sodium": nutrition_info[6],
+                        "image": article_details[2],
                         "similarity": recipe[1]
                     })
     recommended_recipes_data = sorted(recommended_recipes_data, key=lambda x: x["similarity"], reverse=True)
@@ -167,19 +182,31 @@ def compute_article_vector(article_details):
     return recipe_vector_sum.reshape(1, -1)
 
 
-# 각 레시피 메뉴명, 재료를 가져옴
+# 각 레시피 메뉴명, 재료, 이미지 가져옴
 def get_article_details(articleNo):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    SQL = 'SELECT 메뉴명, 재료, 완성이미지 FROM recipes_data1 WHERE 번호 = %s'
+    SQL = 'SELECT 번호, 메뉴명, 재료, 이미지6, 이미지5, 이미지4, 이미지3, 이미지2, 이미지1, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨, 완성이미지 FROM recipes_data1 WHERE 번호 = %s'
     cursor.execute(SQL, (articleNo,))
     result = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
-    return result
+    if result:
+        article_no = result[0]
+        recipe_name = result[1]
+        original_ingredients = result[2]
+        image = result[3] or result[4] or result[5] or result[6] or result[7] or result[8]
+
+        processed_ingredients = get_processed_ingredients(article_no)
+
+        return (recipe_name, processed_ingredients, image)
+
+    if result:
+        return result + (None,) * (11 - len(result))
+    return None
 
 
 # 각 레시피 영양 정보 가져옴
@@ -271,7 +298,7 @@ def getRecentUserVisits():
     cursor = conn.cursor()
 
     SQL = '''
-    SELECT rv.articleNo, rd.메뉴명, rd.완성이미지 
+    SELECT rv.articleNo, rd.메뉴명, rd.이미지6, rd.이미지5, rd.이미지4, rd.이미지3, rd.이미지2, rd.이미지1 
     FROM user_visits rv 
     JOIN recipes_data1 rd ON rv.articleNo = rd.번호 
     WHERE rv.user_id = %s 
@@ -284,11 +311,12 @@ def getRecentUserVisits():
     cursor.close()
     conn.close()
 
-    recentArticleDics = [{"articleNo": article[0], "recipeName": article[1], "image": article[2]}
-                         for article in result]
+    recentArticleDics = []
+    for article in result:
+        image = article[2] or article[3] or article[4] or article[5] or article[6] or article[7]
+        recentArticleDics.append({"articleNo": article[0], "recipeName": article[1], "image": image})
 
     return make_response(jsonify({"success": True, "articles": recentArticleDics}), 200)
-
 
 # 로그아웃
 @recommend1.route('/api/logout', methods=['POST'])

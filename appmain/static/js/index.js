@@ -5,6 +5,8 @@ const noDairyCheckbox = document.getElementById('no_dairy');
 const vegetarianCheckbox = document.getElementById('vegetarian');
 const veganCheckbox = document.getElementById('vegan');
 const nutCheckbox = document.getElementById('nut');
+const recipeNameInput = document.getElementById('recipe_name');
+const cuisineTypeInput = document.getElementById('cuisine_type');
 
 //첫화면 레시피
 function displayRecentArticles(articles) {
@@ -15,21 +17,43 @@ function displayRecentArticles(articles) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card mt-2';
 
+        const image = article["image"];
+        const ingredients = article["ingredients"].split(' ').join(', ');
+
         const articleElement = `
-            <h5 class="card-header" style="background-color: #c0c0c0;">
-                <a class="link-primary text-decoration-none" href="/display_article/${article.articleNo}">
-                    ${article.recipeName}
-                </a>
-            </h5>
-            <div class="card-body">
-                <p class="card-text">재료: ${article.ingredients}</p><br>
-                <p class="card-text">조리 방법: ${article.cookingMethod} &nbsp;&nbsp; 요리 종류: ${article.cuisineType}</p>
-                <p class="card-text"><strong>영양(1회 제공량당)</strong><br> 열량: ${article.calories}kcal, 탄수화물: ${article.carbohydrates}g, 단백질: ${article.protein}g, 지방: ${article.fat}g, 나트륨: ${article.sodium}mg</p>
+            <div class="card-header" style="background-color: #c0c0c0;">
+                <h5 class="card-title">
+                    <a class="link-primary text-decoration-none" href="/display_article/${article.articleNo}">
+                        ${article.recipeName}
+                    </a>
+                </h5>
+            </div>
+            <div class="row g-0">
+                <div class="col-md-4">
+                    ${image ? `<img src="${image}" alt="레시피 이미지" class="img-fluid rounded-start">` : ''}
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <p class="card-text">재료: ${ingredients}</p>
+                    </div>
+                </div>
             </div>
         `;
 
         cardDiv.innerHTML = articleElement;
         container.appendChild(cardDiv);
+    });
+
+    const vacantDiv = document.createElement('div');
+    vacantDiv.className = 'card mt-5';
+    vacantDiv.style = 'border: None;';
+    container.appendChild(vacantDiv);
+
+    container.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            window.location.href = this.href;
+        });
     });
 }
 
@@ -72,7 +96,7 @@ function displaySearchResults(articles) {
         let articleNo = article["articleNo"];
         let title = article["recipeName"];
         let ingredients = article["ingredients"].split(' ').join(', ');
-        let image = article["image"];
+        let image = article["image6"] || article["image5"] || article["image4"] || article["image3"] || article["image2"] || article["image1"];
 
         let cardDiv = document.createElement('div');
         cardDiv.className = 'card mt-2';
@@ -87,7 +111,7 @@ function displaySearchResults(articles) {
             </div>
             <div class="row g-0">
                 <div class="col-md-4">
-                    <img src="${image}" alt="완성 이미지" class="img-fluid rounded-start">
+                    <img src="${image}" alt="레시피 이미지" class="img-fluid rounded-start">
                 </div>
                 <div class="col-md-8">
                     <div class="card-body">
@@ -121,6 +145,23 @@ function checkJWTToken() {
     return jwtToken !== null;
 }
 
+function setCuisineType(type, element) {
+    if (cuisineTypeInput) {
+        if (cuisineTypeInput.value === type) {
+            cuisineTypeInput.value = '';
+            element.classList.remove('selected');
+        } else {
+            cuisineTypeInput.value = type;
+            document.querySelectorAll('.clr li').forEach(li => li.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+    } else {
+        console.error("Cuisine type input element is missing!");
+    }
+}
+
+
+
 //검색
 function searchArticle() {
     const authToken = sessionStorage.getItem('authtoken');
@@ -139,7 +180,8 @@ function searchArticle() {
     let vegetarian = vegetarianCheckbox.checked ? true : false;
     let vegan = veganCheckbox.checked ? true : false;
     let nut = nutCheckbox.checked ? true : false;
-    let cuisineType = document.getElementById('cuisine_type').value;
+    let cuisineType = cuisineTypeInput ? cuisineTypeInput.value : '';
+    let recipeName = recipeNameInput ? recipeNameInput.value.trim() : '';
 
     ingredients = ingredients.trim() !== '' ? ingredients : '';
     excludedIngredients = excludedIngredients.trim() !== '' ? excludedIngredients : '';
@@ -152,6 +194,7 @@ function searchArticle() {
     formData.set("vegan", vegan);
     formData.set("nut", nut);
     formData.set("cuisineType", cuisineType);
+    formData.set("recipeName", recipeName);
 
     fetch(`/api/article/search?page=${currentPage}&limit=${articlesPerPage}`, {
         method: 'POST',
@@ -163,7 +206,6 @@ function searchArticle() {
         return response.json();
     }).then((resBody) => {
         recentArticlesDiv.parentElement.remove();
-        console.log("searchArticle response:", resBody);
         const prevSR = searchResultDiv.querySelectorAll('.card');
 
         if (prevSR.length > 0) {
@@ -195,3 +237,6 @@ noDairyCheckbox.addEventListener('change', searchArticle);
 vegetarianCheckbox.addEventListener('change', searchArticle);
 veganCheckbox.addEventListener('change', searchArticle);
 nutCheckbox.addEventListener('change', searchArticle);
+
+window.onload = fetchRecentArticles;
+
