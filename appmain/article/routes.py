@@ -167,8 +167,12 @@ def searchArticles():
     nut = data.get("nut")
     cuisineType = data.get("cuisineType")
 
-    payload = {"success": False}
+    # 페이지네이션을 위한 쿼리 매개변수
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    offset = (page - 1) * limit
 
+    payload = {"success": False}
 
     authToken = request.headers.get("Authorization")
     if not authToken or not authToken.startswith('Bearer '):
@@ -192,7 +196,6 @@ def searchArticles():
 
     if cursor:
         SQL = 'SELECT 번호, 메뉴명, 재료, 조리방법, 요리종류, 열량, 탄수화물, 단백질, 지방, 나트륨 FROM recipes_data1 WHERE 1=1'
-
 
         condition_statements = []
 
@@ -275,7 +278,12 @@ def searchArticles():
         SQL += ' ' + order_clause
         # SQL += 'ORDER BY 번호 DESC'
 
-        cursor.execute(SQL)
+        SQL_count = 'SELECT COUNT(*) FROM (' + SQL + ') AS count_query'
+        cursor.execute(SQL_count)
+        total_articles = cursor.fetchone()[0]
+
+        SQL += ' LIMIT %s OFFSET %s'
+        cursor.execute(SQL, (limit, offset))
         result = cursor.fetchall()
 
         cursor.close()
@@ -289,7 +297,7 @@ def searchArticles():
                                   "cookingMethod": article[3], "cuisineType": article[4], "calories": article[5], \
                                   "carbohydrates": article[6], "protein": article[7], "fat": article[8], "sodium": article[9]})
 
-        payload = {"success": True, "articles": searchResults}
+        payload = {"success": True, "articles": searchResults, "totalArticles": total_articles}
 
     return make_response(jsonify(payload), 200)
 

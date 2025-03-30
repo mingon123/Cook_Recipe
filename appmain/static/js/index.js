@@ -123,8 +123,10 @@ function searchArticle() {
     const authToken = sessionStorage.getItem('authtoken');
 
     if (!authToken) {
-        alert('로그인 후에 검색할 수 있습니다.');
-        window.location.href = '/signin';
+        if (!alertDisplayed) {
+            alert('로그인 후에 검색할 수 있습니다.');
+            window.location.href = '/signin';
+        }
         return;
     }
 
@@ -148,7 +150,7 @@ function searchArticle() {
     formData.set("nut", nut);
     formData.set("cuisineType", cuisineType);
 
-    fetch('/api/article/search', {
+    fetch(`/api/article/search?page=${currentPage}&limit=${articlesPerPage}`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${authToken}`
@@ -168,6 +170,7 @@ function searchArticle() {
 
         if (resBody["success"] === true) {
             displaySearchResults(resBody["articles"]);
+            updatePaginationControls(resBody["totalArticles"]);
         } else {
             let cardDiv = document.createElement('div');
             cardDiv.className = 'card mt-2 text-center';

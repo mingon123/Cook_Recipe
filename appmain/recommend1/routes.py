@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, send_from_directory, make_response, jsonify, session, current_app as app, render_template
+from flask import Blueprint, send_from_directory, make_response, jsonify, request, session, current_app as app, render_template
 import mysql.connector
 from appmain import app
 from appmain.recommend1 import manage_user_visits
