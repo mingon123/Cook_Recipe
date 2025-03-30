@@ -5,8 +5,6 @@ const noDairyCheckbox = document.getElementById('no_dairy');
 const vegetarianCheckbox = document.getElementById('vegetarian');
 const veganCheckbox = document.getElementById('vegan');
 const nutCheckbox = document.getElementById('nut');
-const recipeNameInput = document.getElementById('recipe_name');
-const cuisineTypeInput = document.getElementById('cuisine_type');
 
 //첫화면 레시피
 function displayRecentArticles(articles) {
@@ -123,23 +121,6 @@ function checkJWTToken() {
     return jwtToken !== null;
 }
 
-function setCuisineType(type, element) {
-    if (cuisineTypeInput) {
-        if (cuisineTypeInput.value === type) {
-            cuisineTypeInput.value = '';
-            element.classList.remove('selected');
-        } else {
-            cuisineTypeInput.value = type;
-            document.querySelectorAll('.clr li').forEach(li => li.classList.remove('selected'));
-            element.classList.add('selected');
-        }
-    } else {
-        console.error("Cuisine type input element is missing!");
-    }
-}
-
-
-
 //검색
 function searchArticle() {
     const authToken = sessionStorage.getItem('authtoken');
@@ -158,23 +139,10 @@ function searchArticle() {
     let vegetarian = vegetarianCheckbox.checked ? true : false;
     let vegan = veganCheckbox.checked ? true : false;
     let nut = nutCheckbox.checked ? true : false;
-    let cuisineType = cuisineTypeInput ? cuisineTypeInput.value : '';
-    let recipeName = recipeNameInput ? recipeNameInput.value.trim() : '';
+    let cuisineType = document.getElementById('cuisine_type').value;
 
     ingredients = ingredients.trim() !== '' ? ingredients : '';
     excludedIngredients = excludedIngredients.trim() !== '' ? excludedIngredients : '';
-
-    console.log("검색 조건:", {
-        ingredients,
-        excludedIngredients,
-        noDairy,
-        vegetarian,
-        vegan,
-        nut,
-        cuisineType,
-        recipeName
-    });  // 검색 조건 로그 출력
-
 
     let formData = new FormData();
     formData.set("searchKeyword", ingredients);
@@ -184,7 +152,6 @@ function searchArticle() {
     formData.set("vegan", vegan);
     formData.set("nut", nut);
     formData.set("cuisineType", cuisineType);
-    formData.set("recipeName", recipeName);
 
     fetch(`/api/article/search?page=${currentPage}&limit=${articlesPerPage}`, {
         method: 'POST',
@@ -228,4 +195,3 @@ noDairyCheckbox.addEventListener('change', searchArticle);
 vegetarianCheckbox.addEventListener('change', searchArticle);
 veganCheckbox.addEventListener('change', searchArticle);
 nutCheckbox.addEventListener('change', searchArticle);
-

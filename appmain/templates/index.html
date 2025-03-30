@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="/static/css/sidebar.css">
     <link rel="stylesheet" href="/static/css/pagination.css">
     <link rel="stylesheet" href="/static/css/recipe.css">
-    <link rel="stylesheet" href="/static/css/cuisine_type.css">
     <title>CookRecipe</title>
 </head>
 <body>
@@ -50,54 +49,6 @@
             <div class="col-lg-8">
                 <div class="custom-border">
                     <div class="row">
-                        <div class="col-4">
-                            <h6>레시피 이름을 입력해주세요</h6>
-                            <div class="input-group">
-                                <input type="text" id="recipe_name" class="form-control">
-                            </div>
-                        </div>
-                        <div class="col-8">
-                            <ul class="clr">
-                                <li class="first" onclick="setCuisineType('밥', this)">
-                                    <div>
-                                        <img src="/static/images/1.png" alt="밥">
-                                        <p class="name">밥요리</p>
-                                    </div>
-                                </li>
-                                <li onclick="setCuisineType('반찬', this)">
-                                    <div>
-                                        <img src="/static/images/2.png" alt="반찬">
-                                        <p class="name">밑반찬</p>
-                                    </div>
-                                </li>
-                                <li onclick="setCuisineType('국&찌개', this)">
-                                    <div>
-                                        <img src="/static/images/3.png" alt="국&찌개">
-                                        <p class="name">국&찌개</p>
-                                    </div>
-                                </li>
-                                <li onclick="setCuisineType('일품', this)">
-                                    <div>
-                                        <img src="/static/images/4.png" alt="일품">
-                                        <p class="name">일품</p>
-                                    </div>
-                                </li>
-                                <li onclick="setCuisineType('후식', this)">
-                                    <div>
-                                        <img src="/static/images/5.png" alt="후식">
-                                        <p class="name">후식</p>
-                                    </div>
-                                </li>
-                                <li onclick="setCuisineType('기타', this)">
-                                    <div>
-                                        <img src="/static/images/6.png" alt="기타">
-                                        <p class="name">기타</p>
-                                    </div>
-                                </li>
-                            </ul>
-                            <input type="hidden" id="cuisine_type" value="">
-                        </div>
-
                         <div class="col-6">
                             <div class="mt-5">
                                 <h6>사용할 재료를 입력해주세요</h6>
@@ -139,6 +90,20 @@
                                         견과류X
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="mt-5">
+                                <h6>요리종류 선택</h6>
+                                <select class="form-control" id="cuisine_type">
+                                    <option value="">모든 종류</option>
+                                    <option value="밥">밥</option>
+                                    <option value="반찬">반찬</option>
+                                    <option value="국&찌개">국&찌개</option>
+                                    <option value="일품">일품</option>
+                                    <option value="후식">후식</option>
+                                    <option value="기타">기타</option>
+                                </select>
                             </div>
                         </div>
                     </div>

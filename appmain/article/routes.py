@@ -169,25 +169,12 @@ def displayArticle():
 def searchArticles():
     data = request.form
     searchKeyword = data.get("searchKeyword")
-    recipeName = data.get("recipeName") if data.get("recipeName") else ""
     excludedIngredients = data.get("excludedIngredients")
     noDairy = data.get("noDairy")
     vegetarian = data.get("vegetarian")
     vegan = data.get("vegan")
     nut = data.get("nut")
     cuisineType = data.get("cuisineType")
-
-    print("검색 조건:", {
-        "searchKeyword": searchKeyword,
-        "recipeName": recipeName,
-        "excludedIngredients": excludedIngredients,
-        "noDairy": noDairy,
-        "vegetarian": vegetarian,
-        "vegan": vegan,
-        "nut": nut,
-        "cuisineType": cuisineType
-    })  # 검색 조건 로그 출력
-
 
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
@@ -220,7 +207,7 @@ def searchArticles():
 
         condition_statements = []
 
-        if cuisineType and cuisineType != '모든 종류':
+        if cuisineType:
             condition_statements.append(f"요리종류 = '{cuisineType}'")
 
         if user_health:
@@ -255,8 +242,6 @@ def searchArticles():
         if condition_statements:
             SQL += ' AND ' + ' AND '.join(condition_statements)
 
-        if recipeName:
-            SQL += ' AND 메뉴명 LIKE "%{}%"'.format(recipeName.strip())
 
         if searchKeyword:
             search_conditions = []
@@ -299,7 +284,7 @@ def searchArticles():
                 SQL += f' AND 재료 NOT LIKE "%{allergy.strip()}%"'
 
         SQL += ' ' + order_clause
-        print("SQL 쿼리:", SQL)
+        # SQL += 'ORDER BY 번호 DESC'
 
         SQL_count = 'SELECT COUNT(*) FROM (' + SQL + ') AS count_query'
         cursor.execute(SQL_count)
@@ -337,8 +322,6 @@ def searchArticles():
         payload = {"success": True, "articles": searchResults, "totalArticles": total_articles}
 
     return make_response(jsonify(payload), 200)
-
-
 
 @article.route('/api/article/recent_user_visits', methods=['GET'])
 def getRecentUserVisits():
