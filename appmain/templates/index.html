@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/static/css/recipe.css">
     <link rel="stylesheet" href="/static/css/cuisine_type.css">
     <link rel="stylesheet" href="/static/css/scrollToTop.css">
+    <link rel="stylesheet" href="/static/css/home.css">
     <title>CookRecipe</title>
 </head>
 <body>
@@ -34,22 +35,29 @@
                     <li class="nav-item">
                         <a class="nav-link" id="favorites_link" href="/favorites">즐겨찾기</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="recommend_link" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            추천 레시피
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="recommend_link">
-                            <li><a class="dropdown-item" id="recommend1_link" href="/recommend1">추천 레시피1</a></li>
-                            <li><a class="dropdown-item" id="recommend2_link" href="/recommend2">추천 레시피2</a></li>
-                            <li><a class="dropdown-item" id="recommend3_link" href="/recommend3">추천 레시피3</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" id="recommend2_link" href="/recommend2">추천 레시피</a>
                     </li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <div class="container mt-5">
+    <div class="container mt-5" id="welcome-section">
+        <div class="row justify-content-center align-items-center home-container">
+            <div class="col-md-6 home-text">
+                <h2>CookRecipe에 오신 것을 환영합니다!</h2>
+                <p>CookRecipe에서 다양한 필터링 옵션을 통해 자신에게 맞는 레시피를 쉽게 찾아보세요. 좋아하는 레시피를 즐겨찾기하고, 추천 레시피도 확인해보세요. 로그인 후 다양한 기능을 경험할 수 있습니다.</p>
+                <button class="btn btn-primary" id="start-search-btn">요리 레시피 찾아보기</button>
+            </div>
+            <div class="col-md-6 home-illustration">
+                <img src="/static/images/illustration.png" class="img-fluid full-image" alt="요리 일러스트">
+            </div>
+        </div>
+    </div>
+
+<!--    style="display: none;"-->
+    <div class="container mt-5" id="search-section" style="display: none;">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="custom-border">

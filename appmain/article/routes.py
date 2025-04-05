@@ -35,7 +35,7 @@ def getRecentArticles():
     cursor = conn.cursor()
 
     SQL = 'SELECT 번호, 메뉴명, 재료, 이미지6, 이미지5, 이미지4, 이미지3, 이미지2, 이미지1, 완성이미지\
-           FROM recipes_data1 ORDER BY 번호 DESC LIMIT 6'
+           FROM recipes_data1 ORDER BY 번호 DESC LIMIT 10'
 
     cursor.execute(SQL)
     result = cursor.fetchall()
@@ -259,7 +259,7 @@ def searchArticles():
         else:
             bmi = None
 
-        if user_health[3] == 1: #weight_loss
+        if user_health[3] == 1: #체중감량목표
             order_clause = 'ORDER BY 열량 ASC'
         else:
             order_clause = 'ORDER BY 번호 DESC'

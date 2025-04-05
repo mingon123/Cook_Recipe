@@ -86,19 +86,20 @@ def calculate_similarity_poly_encoder(model, tokenizer, context, candidates):
             candidate_input_ids=candidate_inputs['input_ids'],
             candidate_attention_mask=candidate_inputs['attention_mask']
         )
-    return similarities.cpu().numpy().flatten()
+    normalized_similarities = (similarities + 1) / 2
+    return normalized_similarities.cpu().numpy().flatten()
 
 
 
 
-# # 평균 유사도 계산 및 출력
-# context = "example context ingredient"
-# candidates = ["candidate ingredient 1", "candidate ingredient 2", "candidate ingredient 3"]
-#
-# similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
-# average_similarity = np.mean(similarities)
-#
-# print(f"평균 유사도: {average_similarity:.4f}")
+# 평균 유사도 계산 및 출력
+context = "example context ingredient"
+candidates = ["candidate ingredient 1", "candidate ingredient 2", "candidate ingredient 3"]
+
+similarities = calculate_similarity_poly_encoder(poly_encoder_model, tokenizer, context, candidates)
+average_similarity = np.mean(similarities)
+
+print(f"평균 유사도: {average_similarity:.4f}")
 
 
 

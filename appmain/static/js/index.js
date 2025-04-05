@@ -232,6 +232,30 @@ function searchArticle() {
     });
 }
 
+document.addEventListener('DOMContentLoaded', function () {
+    const scrollToSearchButton = document.querySelector('#start-search-btn'); // 요리 레시피 찾아보기 버튼
+    const searchSection = document.querySelector('#search-section'); // 검색 섹션
+    const welcomeSection = document.querySelector('#welcome-section'); // 환영 섹션
+
+    scrollToSearchButton.addEventListener('click', function (event) {
+        event.preventDefault(); // 기본 동작 방지
+        welcomeSection.style.display = 'none'; // 환영 섹션 숨기기
+        searchSection.style.display = 'block'; // 검색 섹션 표시
+    });
+});
+
+//document.addEventListener('DOMContentLoaded', function () {
+//    const scrollToSearchButton = document.querySelector('#start-search-btn'); // 요리 레시피 찾아보기 버튼
+//    const searchSection = document.querySelector('#search-section'); // 검색 섹션
+//
+//    scrollToSearchButton.addEventListener('click', function (event) {
+//        event.preventDefault(); // 기본 동작 방지
+//        searchSection.scrollIntoView({ behavior: 'smooth' }); // 검색 섹션으로 스크롤
+//    });
+//});
+
+
+
 searchButton.addEventListener('click', searchArticle);
 noDairyCheckbox.addEventListener('change', searchArticle);
 vegetarianCheckbox.addEventListener('change', searchArticle);
