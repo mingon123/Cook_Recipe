@@ -24,3 +24,6 @@ app.register_blueprint(recommend2)
 
 from appmain.recommend3.routes import recommend3
 app.register_blueprint(recommend3)
+
+from appmain.favorite.routes import favorite
+app.register_blueprint(favorite)

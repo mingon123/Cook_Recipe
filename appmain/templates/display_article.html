@@ -15,6 +15,7 @@
         .article-image {text-align: center;}
         .article-image img {max-width: 100%;}
         .cooking-step {font-size: 18px;}
+<!--        .favorite-button {margin-top: 10px;}-->
     </style>
 </head>
 <body>
@@ -37,6 +38,9 @@
                     <li class="nav-item">
                         <a class="nav-link" id="myinfo_link" href="/myinfo">마이페이지</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="favorites_link" href="/favorites">즐겨찾기</a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="recommend_link" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             추천 레시피
@@ -53,7 +57,12 @@
     </div>
 
     <div class="container mt-5">
-        <div class="row justify-content-center col-8" id="article_title_div"></div>
+        <div class="row justify-content-center col-8" id="article_title_div">
+            <div class="col-8" id="article_title"></div>
+            <div class="col-4 text-end favorite-button">
+                <button id="favorite_button" class="btn btn-primary">즐겨찾기 추가</button>
+            </div>
+        </div>
         <div class="row justify-content-center">
             <div class="col-9">
                 <hr>

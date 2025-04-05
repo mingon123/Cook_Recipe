@@ -134,6 +134,7 @@ def translateCategory(catId):
 def displayArticle():
     data = request.form
     articleNo = data.get("articleNo")
+    user_id = data.get("user_id")
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -145,6 +146,16 @@ def displayArticle():
            FROM recipes_data1 WHERE `번호`=%s'''
     cursor.execute(SQL, (articleNo,))
     result = cursor.fetchone()
+
+    if not result:
+        cursor.close()
+        conn.close()
+        return make_response(jsonify(payload), 200)
+
+    favorite_check_query = 'SELECT * FROM user_favorites WHERE user_id = %s AND article_no = %s'
+    cursor.execute(favorite_check_query, (user_id, articleNo))
+    is_favorite = cursor.fetchone() is not None
+
     cursor.close()
     conn.close()
 
@@ -172,7 +183,8 @@ def displayArticle():
             "manual5": result[19],
             "manual_img5": result[20],
             "manual6": result[21],
-            "manual_img6": result[22]
+            "manual_img6": result[22],
+            "isFavorite": is_favorite
         }
         payload = {"success": True, "article": article}
     else:

@@ -13,7 +13,7 @@ function getUserId() {
 }
 
 function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, calories, carbohydrates, protein, fat, sodium, att_file_no_mk, rcp_na_tip,
-                        manual1, manual_img1, manual2, manual_img2, manual3, manual_img3, manual4, manual_img4, manual5, manual_img5, manual6, manual_img6) {
+                        manual1, manual_img1, manual2, manual_img2, manual3, manual_img3, manual4, manual_img4, manual5, manual_img5, manual6, manual_img6, isFavorite) {
     const titleSection = document.querySelector('#article_title_div');
     const descSection = document.querySelector('#article_desc_div');
     const imageFigure = document.querySelector('#article_image_fig');
@@ -27,6 +27,9 @@ function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, cal
     let title = `[${cuisineType}] ${recipeName}`;
     titleDiv.appendChild(document.createTextNode(title));
     titleSection.appendChild(titleDiv);
+
+    const favoriteButton = document.getElementById('favorite_button');
+    favoriteButton.textContent = isFavorite ? '즐겨찾기 삭제' : '즐겨찾기 추가';
 
     if (att_file_no_mk && att_file_no_mk.length > 0) {
         let image = document.createElement('img');
@@ -106,7 +109,7 @@ function displayArticle(recipeName, ingredients, cookingMethod, cuisineType, cal
 }
 
 function getArticle() {
-    articleNo = getArticleNo();
+    const articleNo = getArticleNo();
     const user_id = getUserId();
 
     let formData = new FormData();
@@ -122,9 +125,9 @@ function getArticle() {
         let article = resBody["article"];
         displayArticle(article["recipeName"], article["ingredients"], article["cookingMethod"], article["cuisineType"],
             article["calories"], article["carbohydrates"], article["protein"], article["fat"], article["sodium"],
-            article["att_file_no_mk"], article["rcp_na_tip"], article["manual1"], article["manual_img1"],article["manual2"], article["manual_img2"],
-            article["manual3"], article["manual_img3"], article["manual4"], article["manual_img4"],
-            article["manual5"], article["manual_img5"], article["manual6"], article["manual_img6"]);
+            article["att_file_no_mk"], article["rcp_na_tip"], article["manual1"], article["manual_img1"], article["manual2"], article["manual_img2"],
+            article["manual3"], article["manual_img3"], article["manual4"], article["manual_img4"], article["manual5"], article["manual_img5"],
+            article["manual6"], article["manual_img6"], article["isFavorite"]);
     }).catch((error) => {
         console.error('Error in getArticle():', error);
     });
@@ -152,7 +155,67 @@ function fetchSimilarRecipes() {
     });
 }
 
+
+function toggleFavorite(articleNo) {
+    const favoriteButton = document.getElementById('favorite_button');
+    const user_id = getUserId();
+
+    if (!user_id) {
+        alert('로그인 후에 즐겨찾기 추가가 가능합니다.');
+        return;
+    }
+
+    const isAdding = favoriteButton.textContent === '즐겨찾기 추가';
+
+    fetch(`/api/favorite${isAdding ? '' : '/' + articleNo}`, {
+        method: isAdding ? 'POST' : 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ article_no: articleNo })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            favoriteButton.textContent = isAdding ? '즐겨찾기 삭제' : '즐겨찾기 추가';
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function checkFavoriteStatus(articleNo) {
+    const user_id = getUserId();
+
+    fetch(`/api/favorite/status/${articleNo}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const favoriteButton = document.getElementById('favorite_button');
+            favoriteButton.textContent = data.is_favorite ? '즐겨찾기 삭제' : '즐겨찾기 추가';
+        } else {
+            console.error('Failed to check favorite status:', data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
 window.addEventListener('load', () => {
     getArticle();
     fetchSimilarRecipes();
+
+    const favoriteButton = document.getElementById('favorite_button');
+    const articleNo = getArticleNo();
+
+    checkFavoriteStatus(articleNo);
+
+    favoriteButton.addEventListener('click', () => {
+        toggleFavorite(articleNo);
+    });
 });

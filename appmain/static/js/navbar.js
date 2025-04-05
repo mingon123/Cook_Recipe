@@ -2,6 +2,7 @@ const signup = document.querySelector("#signup_link");
 const signin = document.querySelector("#signin_link");
 const signout = document.querySelector("#signout_link");
 const myinfo = document.querySelector("#myinfo_link");
+const favorites = document.querySelector("#favorites_link");
 const recommend1Link = document.querySelector("#recommend1_link");
 const recommend2Link = document.querySelector("#recommend2_link");
 const recommend3Link = document.querySelector("#recommend3_link");
@@ -18,6 +19,7 @@ function showAndHideNavbarMenu() {
     else{
         signout.style.display = "none";
         myinfo.style.display = "none";
+        favorites.style.display = "none";
 //        recommend1Link.style.display = "none";
 //        recommend2Link.style.display = "none";
 //        recommend3Link.style.display = "none";
