@@ -147,11 +147,11 @@ def get_recommendations_hybrid(target_embedding, df, embeddings, top_n=5):
 #         average_similarities_test[method].append(avg_sim)
 #
 # # # 각 방법의 전체 평균 유사도 출력
-# # print("검증 데이터에 대한 평균 유사도 평가:")
+# # print("2검증 데이터에 대한 평균 유사도 평가:")
 # # for method in methods:
 # #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_val[method]))
 # #
-# # print("테스트 데이터에 대한 평균 유사도 평가:")
+# # print("2테스트 데이터에 대한 평균 유사도 평가:")
 # # for method in methods:
 # #     print(f"{method}의 평균 유사도:", np.mean(average_similarities_test[method]))
 #

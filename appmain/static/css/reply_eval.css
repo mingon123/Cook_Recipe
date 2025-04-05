@@ -1,0 +1,23 @@
+.rating {
+    direction: rtl;
+    unicode-bidi: bidi-override;
+    display: inline-block;
+}
+.rating input {
+    display: none;
+}
+.rating label {
+    color: #ddd;
+    font-size: 20px;
+    padding: 0;
+    cursor: pointer;
+}
+.rating label:before {
+    content: "\2605";
+}
+.rating input:checked ~ label {
+    color: #ffc700;
+}
+.rating label:hover, .rating label:hover ~ label {
+    color: #deb217;
+}
