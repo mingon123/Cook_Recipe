@@ -369,3 +369,26 @@ def getRecentUserVisits():
 def logout():
     session.clear()
     return make_response(jsonify({"success": True, "message": "Logged out successfully"}), 200)
+
+
+@recommend2.route('/api/recommend/similar/<int:articleNo>', methods=['GET'])
+def getSimilarRecipes(articleNo):
+    article_details = get_article_details(articleNo)
+    if not article_details:
+        return jsonify({"success": False, "message": "레시피를 찾을 수 없습니다."}), 404
+
+    target_embedding = test_df.loc[test_df['recipeName'] == article_details['메뉴명'], 'embeddings'].values[0]
+    similar_recipes, similarities = get_recommendations_hybrid(target_embedding, train_df, np.vstack(train_df['embeddings'].values), top_n=5)
+
+    similar_recipes_info = []
+    for idx, (_, recipe) in enumerate(similar_recipes.iterrows()):
+        similar_article_details = get_article_details_by_name(recipe['recipeName'])
+        if similar_article_details:
+            similar_recipes_info.append({
+                "articleNo": similar_article_details['번호'],
+                "recipeName": recipe['recipeName'],
+                "image": similar_article_details['이미지'],
+                "similarity": float(similarities[idx])
+            })
+
+    return make_response(jsonify({"success": True, "similar_recipes": similar_recipes_info}), 200)
