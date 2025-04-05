@@ -21,7 +21,7 @@ function showAndHideNavbarMenu() {
         myinfo.style.display = "none";
         favorites.style.display = "none";
 //        recommend1Link.style.display = "none";
-        recommend2Link.style.display = "none";
+//        recommend2Link.style.display = "none";
 //        recommend3Link.style.display = "none";
         recommendLink.style.display = "none";
 

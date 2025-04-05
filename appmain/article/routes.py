@@ -259,7 +259,7 @@ def searchArticles():
         else:
             bmi = None
 
-        if user_health[3] == 1: #체중감량목표
+        if user_health[3] == 1: #weight_loss
             order_clause = 'ORDER BY 열량 ASC'
         else:
             order_clause = 'ORDER BY 번호 DESC'

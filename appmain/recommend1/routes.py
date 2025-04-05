@@ -168,6 +168,9 @@ def compute_article_vector(article_details):
     recipe_name = article_details[0]
     ingredients = article_details[1]
 
+    recipe_name = str(recipe_name) if recipe_name else ""
+    ingredients = str(ingredients) if ingredients else ""
+
     recipe_tokens = tokenize_text(recipe_name + " " + ingredients)
 
     recipe_vectors = []
